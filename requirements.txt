@@ -1,0 +1,2 @@
+requests~=2.31.0
+rauth~=0.7.3

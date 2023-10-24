@@ -5,11 +5,34 @@ import configparser
 
 
 class OCLCSession:
+    """
+    Attributes:
+        config  The config file containing settings for the session.
+
+        token_url               The url for token requests.
+        auth_url                The url for authentication requests.
+        metadata_service_url    The url for queries.
+
+        signature       The encoded credentials.
+        token_headers   Headers for an authentication request.
+        token_body      Body for an authentication request.
+        token           Acquired authentication token.
+
+        query_headers   Headers for a query.
+        query_body      Body for a query.
+    """
+
     def __init__(self, config_file="config.ini"):
+        """
+        Encapsulates all the functions and data required to connect to the OCLC API,
+        query the API, and process the returned data.
+
+        :param config_file: The name of the config file in the program folder.
+        """
+
         # Config settings
         self.config = configparser.ConfigParser()
         self.config.sections()
-        # Default "config.ini"
         self.config.read(config_file)
 
         # URLs
@@ -49,6 +72,12 @@ class OCLCSession:
         return printable
 
     def get_signature(self) -> str:
+        """
+        Encodes the client credentials needed to get an authentication token.
+
+        :return: The signature to attach to an authentication request.
+        """
+
         # Get credentials
         secrets = open(self.config['Directories']['secrets'], "r")
         client_id = secrets.readline()
@@ -74,6 +103,12 @@ class OCLCSession:
         return signature
 
     def get_auth_headers(self) -> dict:
+        """
+        Formats the authentication headers corresponding to the config file of the session.
+
+        :return: The dict of formatted headers for an authentication request.
+        """
+
         ini_section = 'Headers'
         auth_headers = {'Authorization': f"Basic {self.signature}"}
         for attr in self.config[ini_section]:
@@ -81,6 +116,12 @@ class OCLCSession:
         return auth_headers
 
     def get_auth_body(self) -> dict:
+        """
+        Formats the authentication body corresponding to the config file of the session.
+
+        :return: The dict of formatted body for an authentication request.
+        """
+
         ini_section = 'Body'
         auth_body = {}
         for attr in self.config[ini_section]:
@@ -89,6 +130,12 @@ class OCLCSession:
 
     # Requests an auth token
     def request_auth_token(self) -> str:
+        """
+        Sends a query to the OCLC API for an authentication token.
+
+        :return: The acquired authentication token as a string.
+        """
+
         request = requests.Request("POST", url=self.token_url, data=self.token_body, headers=self.token_headers)
         prepped = request.prepare()
 
@@ -102,6 +149,12 @@ class OCLCSession:
         return token
 
     def get_query_headers(self) -> dict:
+        """
+        Formats the query headers for a bibliographic search query.
+
+        :return: The dict containing headers for bibliographic search.
+        """
+
         headers = {
             'accept': 'application/json',
             'Authorization': f'Bearer {self.token}'
@@ -109,6 +162,12 @@ class OCLCSession:
         return headers
 
     def get_query_body(self) -> dict:
+        """
+        Formats the query body for a bibliographic search query.
+
+        :return: The dict containing parameters for bibliographic search query.
+        """
+
         registry_ids = self.config['Institution-IDS']['registry_ids']
 
         body = {
@@ -128,6 +187,13 @@ class OCLCSession:
         return body
 
     def query(self, sudoc: str) -> str:
+        """
+        Sends a query to the OCLC API to search for a document from the given SuDoc.
+
+        :param sudoc: SuDoc number of desired document.
+        :return: The response from the query formatted as JSON text.
+        """
+
         self.query_body['q'] = f"gn:{sudoc}"
 
         query_request = requests.Request("GET", url=self.metadata_service_url,

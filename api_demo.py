@@ -4,6 +4,9 @@ import json
 
 
 def simple_demo():
+    """
+    A simple live demo for CS 458 assignment.
+    """
     # Creates new session with login credentials
     oclc_session = OCLCSession("config.ini")
     print("OCLC Session created...\n")
