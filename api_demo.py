@@ -1,0 +1,36 @@
+# This file demos the functional area API Database Requests
+from oclc_api import OCLCSession
+import json
+
+
+def simple_demo():
+    # Creates new session with login credentials
+    oclc_session = OCLCSession("config.ini")
+    print("OCLC Session created...\n")
+
+    # Display token request
+    token_request = oclc_session.printable_token_request()
+    print(f"Token Request...\n"
+          f"---------------------------\n"
+          f"\n{token_request}\n")
+
+    # Print authorization token
+    print(f"Auth Token...\n"
+          f"---------------------------\n"
+          f"{oclc_session.token}\n")
+
+    # Display simple query
+    sudoc = "y4f762el1s2"
+    query_text = oclc_session.printable_query(sudoc)
+    print(f"Simple Query...\n"
+          f"---------------------------\n"
+          f"{query_text}\n")
+
+    # Display results
+    results = oclc_session.query(sudoc)
+    print(results)
+
+    return
+
+
+simple_demo()
