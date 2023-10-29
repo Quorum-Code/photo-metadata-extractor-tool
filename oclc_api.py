@@ -4,6 +4,23 @@ import base64
 import configparser
 
 
+class Query:
+    def __init__(self, method, url, headers, data, params):
+        self.method = method
+        self.url = url
+        self.headers = headers
+        self.data = data
+        self.params = params
+
+        self.response = None
+
+    def send_request(self):
+        request = requests.Request(self.method, url=self.url, headers=self.headers, data=self.data, params=self.params)
+        prepped = request.prepare()
+        with requests.Session() as session:
+            self.response = session.send(prepped)
+
+
 class OCLCSession:
     """
     Attributes:
@@ -46,7 +63,9 @@ class OCLCSession:
         self.token_body = self.get_auth_body()
 
         # Request Auth token
-        self.token = self.request_auth_token()
+        self.hasToken = False
+        self.token = None
+        self.request_auth_token()
 
         # Query setup
         self.query_headers = self.get_query_headers()
@@ -145,6 +164,8 @@ class OCLCSession:
 
         response_json = json.loads(response.text)
         token = response_json['access_token']
+
+        self.hasToken = True
 
         return token
 

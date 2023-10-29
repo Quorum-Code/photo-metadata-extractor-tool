@@ -1,4 +1,4 @@
 requests~=2.31.0
 rauth~=0.7.3
-PyQt5
-qdarkstyle
+PyQt5~=5.15.10
+qdarkstyle~=3.2
