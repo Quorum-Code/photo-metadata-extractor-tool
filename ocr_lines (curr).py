@@ -37,9 +37,6 @@ import scipy.misc
 #device = torch.device('cuda:0' if torch.cuda.is_available else 'cpu')
 
 device = 'cpu'
- 
-if not os.path.exists(asset_zip_path):
-    download_and_unzip(URL, asset_zip_path)
 	
 def read_image(image_path):
     image = Image.open(image_path).convert('RGB')
@@ -171,9 +168,9 @@ def img_recognition(img_list):
 
     order='yes'
 
-    processor = TrOCRProcessor.from_pretrained('microsoft/trocr-large-handwritten')
+    processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-str')
     model = VisionEncoderDecoderModel.from_pretrained(
-        'microsoft/trocr-large-handwritten'
+        'microsoft/trocr-base-str'
     ).to(device)
 
     text_strs = []
@@ -226,8 +223,11 @@ def img_recognition(img_list):
 
 print("Beginning Script")
 
-dirs = [  "c:/Users/Karkaras/Desktop/img recs", "c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs", "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs"
-         , "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs", "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
+dirs = [  "c:/Users/Karkaras/Desktop/img recs",
+          "c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs",
+          "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs",
+          "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
+          "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
 
 for path in dirs:
     
