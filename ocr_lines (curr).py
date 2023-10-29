@@ -37,56 +37,16 @@ import scipy.misc
 #device = torch.device('cuda:0' if torch.cuda.is_available else 'cpu')
 
 device = 'cpu'
-	
-def download_and_unzip(url, save_path):
-    print(f"Downloading and extracting assets....", end="")
  
- 
-    # Downloading zip file using urllib package.
-    urlretrieve(url, save_path)
- 
- 
-    try:
-        # Extracting zip file using the zipfile package.
-        with ZipFile(save_path) as z:
-            # Extract ZIP file contents in the same directory.
-            z.extractall(os.path.split(save_path)[0])
- 
- 
-        print("Done")
- 
- 
-    except Exception as e:
-        print("\nInvalid file.", e)
- 
-URL = r"https://www.dropbox.com/scl/fi/jz74me0vc118akmv5nuzy/images.zip?rlkey=54flzvhh9xxh45czb1c8n3fp3&dl=1"
-asset_zip_path = os.path.join(os.getcwd(), "images.zip")
-# Download if assest ZIP does not exists.
 if not os.path.exists(asset_zip_path):
     download_and_unzip(URL, asset_zip_path)
 	
 def read_image(image_path):
-    """
-    :param image_path: String, path to the input image.
- 
- 
-    Returns:
-        image: PIL Image.
-    """
     image = Image.open(image_path).convert('RGB')
     return image
 	
 def ocr(image, processor, model):
-    """
-    :param image: PIL Image.
-    :param processor: Huggingface OCR processor.
-    :param model: Huggingface OCR model.
- 
- 
-    Returns:
-        generated_text: the OCR'd text string.
-    """
-    # We can directly perform OCR on cropped images.
+    
     pixel_values = processor(image, return_tensors='pt').pixel_values.to(device)
     generated_ids = model.generate(pixel_values)
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
@@ -225,13 +185,7 @@ def img_recognition(img_list):
 
         pred = get_distance(pred)
 
-        #detections = detector.detect(img)
-
-        #print(detections)
-    
         pred = list(distinguish_rows(pred, thresh))
-
-        #print(pred)
 
         pred = list(filter(lambda x:x!=[], pred))
 
@@ -241,9 +195,6 @@ def img_recognition(img_list):
             lby = int(round(box[0]['bottom_right_y'])) if int(round(box[0]['bottom_right_y'])) >= 0 else 0 
             ubx = int(round(box[0]['top_left_x'])) if int(round(box[0]['top_left_x'])) >= 0 else 0 
             lbx = int(round(box[0]['bottom_right_x'])) if int(round(box[0]['bottom_right_x'])) >= 0 else 0 
-                
-            #print("Before Check")
-            #print( ubx, uby, lbx, lby)
 
             if ubx >= lbx:
                 ubx = ubx - ( ubx - lbx + 1 )
@@ -251,18 +202,7 @@ def img_recognition(img_list):
             if uby >= lby:
                 uby = lby - ( uby - lby + 1 )
 
-            #print(box[0]['text'])
-
-            #print("After Check")
-
-            #print( ubx, uby, lbx, lby)
-
-            #cropped_img = img[uby:lby,ubx:lbx]
-
             cropped_img = img[uby:lby,ubx:lbx]
-
-            #cv2.imshow("",cropped_img)
-            #cv2.waitKey()
 
             ext_txt = ext_txt + " " + eval_new_data(
                 cropped_img,
@@ -283,20 +223,8 @@ def img_recognition(img_list):
     
     return text_strs
 
-#Beginning recognition section
 
 print("Beginning Script")
-
-
-#list_dir = "c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs"
-
-#list_dir = "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs"
-
-#list_dir = "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs"
-
-#list_dir = "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs"
-
-#list_dir = "c:/Users/Karkaras/Desktop/img recs"
 
 dirs = [  "c:/Users/Karkaras/Desktop/img recs", "c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs", "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs"
          , "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs", "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
@@ -310,8 +238,7 @@ for path in dirs:
     images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
 
     extracted_data = img_recognition(images_coll)
-    
-    #extracted_data  = pd.DataFrame(columns=['PRRRR'])
+
     
     datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
 
