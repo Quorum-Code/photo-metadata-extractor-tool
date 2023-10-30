@@ -1,42 +1,27 @@
-from PIL import *
 import os
-import sys
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import string
-import multiprocessing
 import math
-import queue
 import cv2
 import tensorflow as tf
-import imgaug
-import skimage.exposure
-from spellchecker import SpellChecker
 import pandas as pd
-
 import keras_ocr
-
-import zipfile
-import tqdm
-import sklearn.model_selection
-
-from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 from PIL import Image
-from tqdm.auto import tqdm
-from urllib.request import urlretrieve
-from zipfile import ZipFile
- 
- 
-
 import torch
 import glob
 import scipy.misc
+import pickle
 
-	
-#device = torch.device('cuda:0' if torch.cuda.is_available else 'cpu')
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
 
 device = 'cpu'
+utils.logging.set_verbosity_error()
 	
 def read_image(image_path):
     image = Image.open(image_path).convert('RGB')
@@ -50,20 +35,8 @@ def ocr(image, processor, model):
     return generated_text
 	
 def eval_new_data(img, processor, num_samples=4, model=None):
-    #image_paths = glob.glob(data_path)
-    #for i, image_path in tqdm(enumerate(image_paths), total=len(image_paths)):
-    #    if i == num_samples:
-    #        break
-    #image = read_image(image_path)
     text = ocr(img, processor, model)
-    #plt.figure(figsize=(7, 4))
-    #plt.imshow(img)
-    #plt.title(text)
-    #plt.axis('off')
-    #plt.show()
     return text
-
-
 
 def distinguish_rows(lst, thresh=15): 
     sublists = []
@@ -144,8 +117,46 @@ def write_dataframe(data, label):
     output_data.to_csv(datapath)
 
     return datapath
+
+def text_classification(img):
+    rows = img.shape[0]
+    cols = img.shape[1]
+    img=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    #print(rows)
+    #print(cols)
+    #print(rows/cols)
+    retval, bwMask =cv2.threshold(img, 0.0, 255.0, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    mycnt=0
+    myavg=0
+    for xx in range (0,cols):
+        mycnt=0
+        for yy in range (0,rows):
+            if bwMask[yy,xx]==0:
+                mycnt=mycnt+1
+                
+        myavg=myavg+(mycnt*1.0)/rows
+    myavg=myavg/cols
+    #print(myavg)
+    change=0
+    for xx in range (0,rows):
+        mycnt=0
+        for yy in range (0,cols-1):
+            if bwMask[xx:yy].all()!=bwMask[xx:yy+1].all():
+                mycnt=mycnt+1
+        change=change+(mycnt*1.0)/cols
+    change=change/(rows)
+
+    rf_classifier = pickle.load(open("text_classifier.sav", 'rb'))
+
+    ext_features = np.reshape([rows, cols, rows/cols, myavg, change], (1, -1))
+
+    label = rf_classifier.predict(ext_features)
+
+    pickle.dump(rf_classifier, open("text_classifier.sav", 'wb'))
+
+    return label
    
-def img_recognition(img_list):
+def img_recognition(img_dir, img_list):
 
     data_dir = '.'
     alphabet = string.digits + string.ascii_letters + "./-(),#:"
@@ -168,16 +179,27 @@ def img_recognition(img_list):
 
     order='yes'
 
-    processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-str')
-    model = VisionEncoderDecoderModel.from_pretrained(
-        'microsoft/trocr-base-str'
+    processor_typed = TrOCRProcessor.from_pretrained('microsoft/trocr-large-printed')
+    model_typed = VisionEncoderDecoderModel.from_pretrained(
+        'microsoft/trocr-large-printed'
     ).to(device)
 
+    processor_hw = TrOCRProcessor.from_pretrained('microsoft/trocr-large-handwritten')
+    model_hw = VisionEncoderDecoderModel.from_pretrained(
+        'microsoft/trocr-large-handwritten'
+    ).to(device)
+
+    #processor = TrOCRProcessor.from_pretrained('microsoft/trocr-large-str')
+    #model = VisionEncoderDecoderModel.from_pretrained(
+    #    'microsoft/trocr-large-handwritten'
+    #).to(device)
+    
     text_strs = []
 
     ext_txt = ""
 
-    for img in images_coll:
+    for img in img_list:
+
         pred = pipeline.recognize([img])
 
         pred = get_distance(pred)
@@ -186,65 +208,92 @@ def img_recognition(img_list):
 
         pred = list(filter(lambda x:x!=[], pred))
 
-        for box in pred:
+        #print(pred)
 
-            uby = int(round(box[0]['top_left_y'])) if int(round(box[0]['top_left_y'])) >= 0 else 0 
-            lby = int(round(box[0]['bottom_right_y'])) if int(round(box[0]['bottom_right_y'])) >= 0 else 0 
-            ubx = int(round(box[0]['top_left_x'])) if int(round(box[0]['top_left_x'])) >= 0 else 0 
-            lbx = int(round(box[0]['bottom_right_x'])) if int(round(box[0]['bottom_right_x'])) >= 0 else 0 
+        for row in pred:
 
-            if ubx >= lbx:
-                ubx = ubx - ( ubx - lbx + 1 )
+            row = sorted(row, key=lambda x:x['dist_from_origin'])
+            
+            #print(box)
 
-            if uby >= lby:
-                uby = lby - ( uby - lby + 1 )
+            for box in row:
 
-            cropped_img = img[uby:lby,ubx:lbx]
+                uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0 
+                lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0 
+                ubx = int(round(box['top_left_x'])) if int(round(box['top_left_x'])) >= 0 else 0 
+                lbx = int(round(box['bottom_right_x'])) if int(round(box['bottom_right_x'])) >= 0 else 0 
+            
+                if ubx >= lbx:
+                    ubx = ubx - ( ubx - lbx + 1 )
 
-            ext_txt = ext_txt + " " + eval_new_data(
-                cropped_img,
-                processor=processor,
-                num_samples=1,
-                model=model
-                )
+                if uby >= lby:
+                    uby = lby - ( uby - lby + 1 )
 
-        print(ext_txt)
+                cropped_img = img[uby:lby,ubx:lbx]
+            
+                label = text_classification(cropped_img)
+
+                #print(label)
+
+                if label in [ 'Printed_extended', 'Other_extended' ]:
+
+                    ext_txt = ext_txt + " " + eval_new_data(
+                        cropped_img,
+                        processor=processor_typed,
+                        num_samples=20,
+                        model=model_typed
+                        ) 
+
+                elif label in [ 'Handwritten_extended', 'Mixed_extended' ]:
+
+                    ext_txt = ext_txt + " " + eval_new_data(
+                        cropped_img,
+                        processor=processor_hw,
+                        num_samples=20,
+                        model=model_hw
+                        )
 
         text_strs.append(ext_txt)
 
         ext_txt = ""
 
-    print(text_strs)
+        print(text_strs)
       
     print("finished image text recognizing lines")
     
     return text_strs
 
+def read_data():
 
-print("Beginning Script")
+    print("Beginning Script")
 
-dirs = [  "c:/Users/Karkaras/Desktop/img recs",
-          "c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs",
-          "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs",
-          "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
-          "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
+    #dirs = [ "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs" ]
 
-for path in dirs:
+    #dirs = [ "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
+
+    dirs = [ # "c:/Users/Karkaras/Desktop/img recs",        
+              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs",
+              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs",
+              "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
+              "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
+        
+
+    for path in dirs:
     
-    img_dir = os.listdir(path)
+        img_dir = os.listdir(path)
 
-    img_dir = [ os.path.join(path, img) for img in img_dir ]
+        img_dir = [ os.path.join(path, img) for img in img_dir ]
 
-    images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
+        images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
 
-    extracted_data = img_recognition(images_coll)
+        extracted_data = img_recognition(img_dir, images_coll)
 
+        datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
+
+        print(datapath)
     
-    datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
+    print("finished image reading lines")
 
-    print(datapath)
-    
-print("finished image reading lines")
-
+read_data()
 
 
