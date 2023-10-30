@@ -8,6 +8,7 @@ class WindowDesigner:
     def __init__(self, parent):
         self.parent = parent
         self.style_flag = False
+        self.path_value = None #initialize path_value as None
 
     def create_login_window(self):
         parent = self.parent
@@ -84,17 +85,19 @@ class WindowDesigner:
         self.parent.close()
 
     def verify_path(self, directory_path, window):
-        string = "Chosen File was: " + "<em>"+directory_path+"<em>"
-        if len(string) > 850 / 8:
-            string = string[::850/8]
-        path_value = QLabel(string, parent=window.homepage)
-        path_value.setGeometry(25, 250, 850, 50)
-        path_value.show()
+        if self.path_value:
+            self.path_value.deleteLater()
+            window.homepage.update()
+        if len(directory_path) > 850 / 9:
+            verifiedString =  "Chosen File was: \n "+ "..." + directory_path[-int(850/12)::]
+        else:
+            verifiedString = "Chosen File was: \n " +  directory_path
+        self.path_value = QLabel(verifiedString, parent=window.homepage)
+        self.path_value.setGeometry(20, 260, 850, 50)
+        self.path_value.show()
         window.homepage.update()
 
     
-        
-
 class PMETApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -104,12 +107,9 @@ class PMETApp(QWidget):
         self.directory_path= None
         self.style_flag = False # added to track the flag state
 
-
-
     def run(self):
         self.show()
         
-
     def open_home(self):
         # Replace the following line with your authentication logic
         status_code = self.authenticate_user()
@@ -169,10 +169,9 @@ class PMETApp(QWidget):
 if __name__ == '__main__':
     app = QApplication([])  # Create the QApplication instance
     pmet_app = PMETApp()
-
     toggle_style_button = QPushButton("Toggle Style", pmet_app)
     toggle_style_button.setGeometry(650, 100, 200, 50)
     toggle_style_button.clicked.connect(pmet_app.toggleStyle)
-
+  
     pmet_app.run()
     sys.exit(app.exec())  # Start the event loop with app.exec()
