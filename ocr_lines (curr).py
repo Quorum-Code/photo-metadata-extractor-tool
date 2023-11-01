@@ -14,6 +14,8 @@ import torch
 import glob
 import scipy.misc
 import pickle
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import cpu_count
 
 def warn(*args, **kwargs):
     pass
@@ -118,7 +120,7 @@ def write_dataframe(data, label):
 
     return datapath
 
-def text_classification(img):
+def text_classification(img, rf_classifier):
     rows = img.shape[0]
     cols = img.shape[1]
     img=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -146,17 +148,19 @@ def text_classification(img):
         change=change+(mycnt*1.0)/cols
     change=change/(rows)
 
-    rf_classifier = pickle.load(open("text_classifier.sav", 'rb'))
+    #rf_classifier = pickle.load(open("text_classifier.sav", 'rb'))
 
     ext_features = np.reshape([rows, cols, rows/cols, myavg, change], (1, -1))
 
     label = rf_classifier.predict(ext_features)
 
-    pickle.dump(rf_classifier, open("text_classifier.sav", 'wb'))
+    #pickle.dump(rf_classifier, open("text_classifier.sav", 'wb'))
 
     return label
-   
-def img_recognition(img_dir, img_list):
+
+def load_models():
+
+    rf_classifier = pickle.load(open("text_classifier.sav", 'rb'))
 
     data_dir = '.'
     alphabet = string.digits + string.ascii_letters + "./-(),#:"
@@ -167,101 +171,98 @@ def img_recognition(img_dir, img_list):
     recognizer = keras_ocr.recognition.Recognizer(
         alphabet=recognizer_alphabet
     )
+
     recognizer.compile()
 
-    recognizer.model.load_weights('C:/Users/Karkaras/Desktop/curr_recognizer.h5')
+    recognizer.model.load_weights('./458projMLmodels/curr_recognizer.h5')
 
     pipeline = keras_ocr.pipeline.Pipeline(detector=detector, recognizer=recognizer)
 
-    print("Beginning Image Recognition")
-
-    thresh = 15
-
-    order='yes'
-
-    processor_typed = TrOCRProcessor.from_pretrained('microsoft/trocr-large-printed')
+    processor_typed = TrOCRProcessor.from_pretrained('./ocr_models/typed_ocr_models')
     model_typed = VisionEncoderDecoderModel.from_pretrained(
-        'microsoft/trocr-large-printed'
+        './ocr_models/typed_ocr_models'
     ).to(device)
 
-    processor_hw = TrOCRProcessor.from_pretrained('microsoft/trocr-large-handwritten')
+    processor_hw = TrOCRProcessor.from_pretrained('./ocr_models/hw_ocr_models')
     model_hw = VisionEncoderDecoderModel.from_pretrained(
-        'microsoft/trocr-large-handwritten'
+        './ocr_models/hw_ocr_models'
     ).to(device)
-
-    #processor = TrOCRProcessor.from_pretrained('microsoft/trocr-large-str')
-    #model = VisionEncoderDecoderModel.from_pretrained(
-    #    'microsoft/trocr-large-handwritten'
-    #).to(device)
     
-    text_strs = []
+    return processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline
+ 
+def img_recognition(img, processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline):
 
     ext_txt = ""
 
-    for img in img_list:
+    pred = pipeline.recognize([img])
 
-        pred = pipeline.recognize([img])
+    pred = get_distance(pred)
 
-        pred = get_distance(pred)
+    pred = list(distinguish_rows(pred))
 
-        pred = list(distinguish_rows(pred, thresh))
+    pred = list(filter(lambda x:x!=[], pred))
 
-        pred = list(filter(lambda x:x!=[], pred))
+    for row in pred:
 
-        #print(pred)
+        row = sorted(row, key=lambda x:x['dist_from_origin'])
 
-        for row in pred:
+        for box in row:
 
-            row = sorted(row, key=lambda x:x['dist_from_origin'])
+            uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0 
+            lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0 
+            ubx = int(round(box['top_left_x'])) if int(round(box['top_left_x'])) >= 0 else 0 
+            lbx = int(round(box['bottom_right_x'])) if int(round(box['bottom_right_x'])) >= 0 else 0 
             
-            #print(box)
+            if ubx >= lbx:
+                ubx = ubx - ( ubx - lbx + 1 )
 
-            for box in row:
+            if uby >= lby:
+                uby = lby - ( uby - lby + 1 )
 
-                uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0 
-                lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0 
-                ubx = int(round(box['top_left_x'])) if int(round(box['top_left_x'])) >= 0 else 0 
-                lbx = int(round(box['bottom_right_x'])) if int(round(box['bottom_right_x'])) >= 0 else 0 
+            cropped_img = img[uby:lby,ubx:lbx]
             
-                if ubx >= lbx:
-                    ubx = ubx - ( ubx - lbx + 1 )
+            label = text_classification(cropped_img, rf_classifier)
 
-                if uby >= lby:
-                    uby = lby - ( uby - lby + 1 )
 
-                cropped_img = img[uby:lby,ubx:lbx]
-            
-                label = text_classification(cropped_img)
+            if label in [ 'Printed_extended', 'Other_extended' ]:
 
-                #print(label)
+                ext_txt = ext_txt + " " + eval_new_data(
+                    cropped_img,
+                    processor=processor_typed,
+                    num_samples=20,
+                    model=model_typed
+                    ) 
 
-                if label in [ 'Printed_extended', 'Other_extended' ]:
+            elif label in [ 'Handwritten_extended', 'Mixed_extended' ]:
 
-                    ext_txt = ext_txt + " " + eval_new_data(
-                        cropped_img,
-                        processor=processor_typed,
-                        num_samples=20,
-                        model=model_typed
-                        ) 
+                ext_txt = ext_txt + " " + eval_new_data(
+                    cropped_img,
+                    processor=processor_hw,
+                    num_samples=20,
+                    model=model_hw
+                    )
 
-                elif label in [ 'Handwritten_extended', 'Mixed_extended' ]:
-
-                    ext_txt = ext_txt + " " + eval_new_data(
-                        cropped_img,
-                        processor=processor_hw,
-                        num_samples=20,
-                        model=model_hw
-                        )
-
-        text_strs.append(ext_txt)
-
-        ext_txt = ""
-
-        print(text_strs)
-      
-    print("finished image text recognizing lines")
+            ext_txt = ext_txt.replace(string.punctuation, '')
     
-    return text_strs
+    return ext_txt
+
+def par_img_proc_caller(img_list):
+
+    processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline = load_models()
+
+    extracted_data = []
+    
+    exe = ThreadPoolExecutor(cpu_count())
+
+    for img in img_list:
+        extracted_data.append(exe.submit(img_recognition, img, processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline))
+
+    for obj in range(len(extracted_data)):
+        extracted_data[obj] = extracted_data[obj].result()
+
+    print(extracted_data)
+
+    return extracted_data
 
 def read_data():
 
@@ -271,12 +272,12 @@ def read_data():
 
     #dirs = [ "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
 
-    dirs = [ # "c:/Users/Karkaras/Desktop/img recs",        
+    dirs = [  "c:/Users/Karkaras/Desktop/img recs" ] #,        
               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs",
               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs",
-              "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
-              "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
-        
+              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
+              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs",
+              #"c:/Users/Karkaras/Desktop/Sudocsv2" ]
 
     for path in dirs:
     
@@ -286,7 +287,9 @@ def read_data():
 
         images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
 
-        extracted_data = img_recognition(img_dir, images_coll)
+        extracted_data = par_img_proc_caller(images_coll)
+
+        #extracted_data = img_recognition(img_dir, images_coll)
 
         datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
 
