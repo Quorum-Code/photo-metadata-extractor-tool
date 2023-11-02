@@ -160,7 +160,7 @@ def text_classification(img, rf_classifier):
 
 def load_models():
 
-    rf_classifier = pickle.load(open("text_classifier.sav", 'rb'))
+    rf_classifier = pickle.load(open("./text_classifier.sav", 'rb'))
 
     data_dir = '.'
     alphabet = string.digits + string.ascii_letters + "./-(),#:"
@@ -272,9 +272,9 @@ def read_data():
 
     #dirs = [ "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
 
-    dirs = [  "c:/Users/Karkaras/Desktop/img recs" ] #,        
+    dirs = [  "c:/Users/Karkaras/Desktop/img recs" ]#,        
               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs",
-              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs",
+              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs" ] #,
               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs",
               #"c:/Users/Karkaras/Desktop/Sudocsv2" ]
@@ -283,7 +283,8 @@ def read_data():
     
         img_dir = os.listdir(path)
 
-        img_dir = [ os.path.join(path, img) for img in img_dir ]
+        img_dir = [ os.path.join(path,
+                                 img) for img in img_dir ]
 
         images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
 
