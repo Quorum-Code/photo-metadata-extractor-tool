@@ -4,6 +4,16 @@ import base64
 import configparser
 
 
+def set_secrets(client_id: str, client_secret: str):
+    # Config setup
+    config = configparser.ConfigParser()
+    config['SECRETS'] = {'client_id': f'{client_id}', 'client_secret': f'{client_secret}'}
+
+    # Write
+    with open('.secrets', 'w') as configfile:
+        config.write(configfile)
+
+
 class Query:
     def __init__(self, method, url, headers, data, params):
         self.method = method
@@ -98,10 +108,13 @@ class OCLCSession:
         """
 
         # Get credentials
-        secrets = open(self.config['Directories']['secrets'], "r")
-        client_id = secrets.readline()
-        client_secret = secrets.readline()
-        secrets.close()
+        secrets_file = self.config['Directories']['secrets']
+        secrets = configparser.ConfigParser()
+        secrets.sections()
+        secrets.read(secrets_file)
+
+        client_id = secrets['SECRETS']['client_id']
+        client_secret = secrets['SECRETS']['client_secret']
 
         # Unsigned credentials
         credentials = f"{client_id}:{client_secret}"
@@ -119,6 +132,7 @@ class OCLCSession:
         del credentials
         del signature_bytes
 
+        # return signature
         return signature
 
     def get_auth_headers(self) -> dict:
@@ -148,7 +162,7 @@ class OCLCSession:
         return auth_body
 
     # Requests an auth token
-    def request_auth_token(self) -> str:
+    def request_auth_token(self):
         """
         Sends a query to the OCLC API for an authentication token.
 
@@ -165,9 +179,13 @@ class OCLCSession:
         response_json = json.loads(response.text)
         token = response_json['access_token']
 
-        self.hasToken = True
+        # DEBUG
+        print("**********************************************")
+        print(response_json)
+        print("**********************************************")
 
-        return token
+        self.hasToken = True
+        self.token = token
 
     def get_query_headers(self) -> dict:
         """
@@ -227,7 +245,6 @@ class OCLCSession:
 
         return response.text
 
-    # Requests a refreshed token
-    def refresh_auth_token(self):
 
-        return
+sess = OCLCSession()
+print(f"{sess.signature}")
