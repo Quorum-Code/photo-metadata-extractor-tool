@@ -239,7 +239,3 @@ class OCLCSession:
             response = session.send(query_prepped)
 
         return response.text
-
-
-sess = OCLCSession()
-print(f"{sess.signature}")
