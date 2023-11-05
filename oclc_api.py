@@ -73,6 +73,7 @@ class OCLCSession:
         self.token_body = self.get_auth_body()
 
         # Request Auth token
+        self.auth_response = ""
         self.hasToken = False
         self.token = None
         self.request_auth_token()
@@ -176,11 +177,16 @@ class OCLCSession:
         with requests.Session() as session:
             response = session.send(prepped)
 
+        self.auth_response = response.text
         response_json = json.loads(response.text)
-        token = response_json['access_token']
 
-        self.hasToken = True
-        self.token = token
+        if 'access_token' in response_json:
+            token = response_json['access_token']
+            self.hasToken = True
+            self.token = token
+        else:
+            self.hasToken = False
+            self.token = None
 
     def get_query_headers(self) -> dict:
         """
@@ -239,3 +245,8 @@ class OCLCSession:
             response = session.send(query_prepped)
 
         return response.text
+
+
+if __name__ == "__main__":
+    oclcsession = OCLCSession("config.ini")
+
