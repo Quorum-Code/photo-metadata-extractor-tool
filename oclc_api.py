@@ -179,11 +179,6 @@ class OCLCSession:
         response_json = json.loads(response.text)
         token = response_json['access_token']
 
-        # DEBUG
-        print("**********************************************")
-        print(response_json)
-        print("**********************************************")
-
         self.hasToken = True
         self.token = token
 
