@@ -9,10 +9,7 @@ import tensorflow as tf
 import pandas as pd
 import keras_ocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
-from PIL import Image
 import torch
-import glob
-import scipy.misc
 import pickle
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
@@ -85,38 +82,52 @@ def get_distance(preds):
             idx = idx +1
     return detections
 
-def get_train_val_test_split(arr):
-    train, valtest = sklearn.model_selection.train_test_split(arr, train_size=0.8, random_state=42)
-    val, test = sklearn.model_selection.train_test_split(valtest, train_size=0.5, random_state=42)
-    return train, val, test    
-
-def heightDiffCheck(currHeight, windowDict):
-    for rec in windowDict.queue:
-        if abs(currHeight - rec) > 400:
-            return True
-    return False
-
 def write_dataframe(data, label):
+
+    print("Writing Out Data to CSV")
+
+    #change this to test each individual element in data
+
+    label_classifier = pickle.load(open("./rf_model.sav", 'rb')) 
 
     curr_time = datetime.datetime.now()
 
     init_datapath =  '.\\extracted_data\\'
 
-    curr_time = curr_time.strftime('%Y-%m-%d %H-%M-%S')[:-3] + "_" + label + '_extracted_data.csv'
+    #curr_time = curr_time.strftime('%Y-%m-%d %H-%M-%S')[:-3] + "_" + label + '_extracted_data.csv'
 
-    datapath = init_datapath + curr_time
+    #datapath = init_datapath + curr_time
+
+    datapath = "extracted_data/extracted_data.csv"
 
     os.makedirs(init_datapath, exist_ok=True)
 
-    print(datapath)
+    #print(datapath)
 
-    output_data = pd.DataFrame(columns=['Title', 'SuDoc', 'Publication Year'])
+    output_data = pd.DataFrame(columns=['Title', 'SuDoc', 'Publication Year','Error Code','Query Status'])
 
-    output_data['SuDoc'] = data
+    print(data)
 
-    print(output_data)
+    for idx in range(len(data)):
+
+            label_pred = np.reshape(text_feature_extractor(data[idx]), (1, -1)) 
+
+            print(label_pred)
+
+            text_type = label_classifier.predict(label_pred)[0]
+
+            if text_type == 'title':
+                text_type = 'Title'
+            elif text_type == 'sudoc':
+                text_type = 'SuDoc'
+
+            output_data = pd.concat([pd.DataFrame([{text_type:data[idx]}]), output_data], ignore_index=True)
+
+    #print(output_data)
 
     output_data.to_csv(datapath)
+
+    print("Completed Writing Step")
 
     return datapath
 
@@ -160,7 +171,9 @@ def text_classification(img, rf_classifier):
 
 def load_models():
 
-    rf_classifier = pickle.load(open("./text_classifier.sav", 'rb'))
+    print("Loading Models")
+
+    writing_classifier = pickle.load(open("./text_classifier.sav", 'rb'))
 
     data_dir = '.'
     alphabet = string.digits + string.ascii_letters + "./-(),#:"
@@ -174,7 +187,7 @@ def load_models():
 
     recognizer.compile()
 
-    recognizer.model.load_weights('./458projMLmodels/curr_recognizer.h5')
+    recognizer.model.load_weights('./curr_recognizer.h5')
 
     pipeline = keras_ocr.pipeline.Pipeline(detector=detector, recognizer=recognizer)
 
@@ -187,10 +200,32 @@ def load_models():
     model_hw = VisionEncoderDecoderModel.from_pretrained(
         './ocr_models/hw_ocr_models'
     ).to(device)
+
+    print("Successfully Loaded Models")
     
-    return processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline
+    return processor_typed, model_typed, processor_hw, model_hw, \
+           writing_classifier, pipeline
+
+def text_feature_extractor(value):
+
+    text_length = len(value)
+
+    words = value.count(" ") + 1
+
+    numbers = sum(c.isdigit() for c in value)
+
+    letters = sum(c.isalpha() for c in value)
+
+    avg_word_length = sum(len(word) for word in value) / words
+
+    return [ text_length, words, numbers/text_length, avg_word_length]
  
-def img_recognition(img, processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline):
+def img_recognition(img_dir, processor_typed, model_typed, processor_hw,
+                    model_hw, writing_classifier, pipeline):
+
+    print("Beggining extraction on image: ", img_dir)
+
+    img = keras_ocr.tools.read(img_dir)
 
     ext_txt = ""
 
@@ -221,8 +256,7 @@ def img_recognition(img, processor_typed, model_typed, processor_hw, model_hw, r
 
             cropped_img = img[uby:lby,ubx:lbx]
             
-            label = text_classification(cropped_img, rf_classifier)
-
+            label = text_classification(cropped_img, writing_classifier)
 
             if label in [ 'Printed_extended', 'Other_extended' ]:
 
@@ -242,20 +276,24 @@ def img_recognition(img, processor_typed, model_typed, processor_hw, model_hw, r
                     model=model_hw
                     )
 
-            ext_txt = ext_txt.replace(string.punctuation, '')
+            ext_txt = ''.join('' if c in string.punctuation else c for c in ext_txt)
+
+    print("Completed extraction on image: ", img_dir)
     
     return ext_txt
 
-def par_img_proc_caller(img_list):
+def par_img_proc_caller(img_dir):
 
-    processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline = load_models()
+    #load models outside of this call
+
+    processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline = load_models()
 
     extracted_data = []
     
-    exe = ThreadPoolExecutor(cpu_count())
+    exe = ThreadPoolExecutor(math.ceil(cpu_count()/2))
 
-    for img in img_list:
-        extracted_data.append(exe.submit(img_recognition, img, processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline))
+    for img in img_dir:
+        extracted_data.append(exe.submit(img_recognition, img, processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline))
 
     for obj in range(len(extracted_data)):
         extracted_data[obj] = extracted_data[obj].result()
@@ -263,7 +301,8 @@ def par_img_proc_caller(img_list):
     print(extracted_data)
 
     return extracted_data
-
+'''
+#This read_data is here only for debugging
 def read_data():
 
     print("Beginning Script")
@@ -272,12 +311,13 @@ def read_data():
 
     #dirs = [ "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
 
-    dirs = [  "c:/Users/Karkaras/Desktop/img recs" ]#,        
-              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs",
-              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs" ] #,
-              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
-              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs",
-              #"c:/Users/Karkaras/Desktop/Sudocsv2" ]
+    dirs = [  "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs",
+              "c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
+              "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs",
+              "c:/Users/Karkaras/Desktop/Sudocsv2",
+              "c:/Users/Karkaras/Desktop/classifier scripts/proc_sample_imgs/spare_text_imgs",
+              "c:/Users/Karkaras/Desktop/img recs" ]
+            
 
     for path in dirs:
     
@@ -286,9 +326,11 @@ def read_data():
         img_dir = [ os.path.join(path,
                                  img) for img in img_dir ]
 
-        images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
+        #images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
 
-        extracted_data = par_img_proc_caller(images_coll)
+        #extracted_data = par_img_proc_caller(images_coll)
+
+        extracted_data = par_img_proc_caller(img_dir)
 
         #extracted_data = img_recognition(img_dir, images_coll)
 
@@ -297,7 +339,30 @@ def read_data():
         print(datapath)
     
     print("finished image reading lines")
+'''
+#The read_data function for use
 
-read_data()
+def read_data(path):
+
+    print("Beginning Script")
+       
+    img_dir = os.listdir(path)
+
+    img_dir = [ os.path.join(path,
+                                 img) for img in img_dir ]
+
+    images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
+
+    extracted_data = par_img_proc_caller(images_coll)
+
+        #extracted_data = img_recognition(img_dir, images_coll)
+
+    datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
+
+    return(datapath)
+    
+    print("finished image reading lines")
+
+#read_data()
 
 
