@@ -216,9 +216,17 @@ def text_feature_extractor(value):
 
     letters = sum(c.isalpha() for c in value)
 
+    if text_length == 0:
+
+        num_text_ratio = 0
+
+    else:
+
+        num_text_ratio = numbers/text_length
+
     avg_word_length = sum(len(word) for word in value) / words
 
-    return [ text_length, words, numbers/text_length, avg_word_length]
+    return [ text_length, words, num_text_ratio, avg_word_length]
  
 def img_recognition(img_dir, processor_typed, model_typed, processor_hw,
                     model_hw, writing_classifier, pipeline):
@@ -360,7 +368,7 @@ def read_data(path):
     datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
 
     return(datapath)
-    
+   
     print("finished image reading lines")
 
 #read_data()
