@@ -19,6 +19,8 @@ def warn(*args, **kwargs):
 import warnings
 warnings.warn = warn
 
+count = 0
+
 device = 'cpu'
 utils.logging.set_verbosity_error()
 	
@@ -229,7 +231,8 @@ def text_feature_extractor(value):
     return [ text_length, words, num_text_ratio, avg_word_length]
  
 def img_recognition(img_dir, processor_typed, model_typed, processor_hw,
-                    model_hw, writing_classifier, pipeline):
+                    model_hw, writing_classifier, pipeline, total_images, progress_signal):
+    global count
 
     print("Beggining extraction on image: ", img_dir)
 
@@ -287,6 +290,9 @@ def img_recognition(img_dir, processor_typed, model_typed, processor_hw,
             ext_txt = ''.join('' if c in string.punctuation else c for c in ext_txt)
 
     print("Completed extraction on image: ", img_dir)
+
+    count +=1
+    progress_signal.emit(count/total_images)
     
     return ext_txt
 
@@ -299,20 +305,15 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     extracted_data = []
     
     exe = ThreadPoolExecutor(math.ceil(cpu_count()/2))
-    i = 0
+    
     print("Total images", total_images)
     for img in img_dir:
-        extracted_data.append(exe.submit(img_recognition, img, processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline))
-        progress = (i+ 1)/(total_images+1)
-        progress_signal.emit(progress)
-        i +=1
+        extracted_data.append(exe.submit(img_recognition, img, processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline, total_images, progress_signal))
 
     for obj in range(len(extracted_data)):
         extracted_data[obj] = extracted_data[obj].result()
-    i+=1
-    progress =(i+1)/(total_images+1)
-    progress_signal.emit(progress)
-    print(extracted_data)
+  
+    #print(extracted_data)
 
     return extracted_data
 '''
@@ -360,6 +361,9 @@ def read_data(path,progress_signal):
 
     print("Beginning Script")
        
+    global count
+    count = 0
+
     img_dir = os.listdir(path)
 
     img_dir = [ os.path.join(path,
