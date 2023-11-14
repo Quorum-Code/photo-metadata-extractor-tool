@@ -3,6 +3,13 @@ import json
 import base64
 import configparser
 
+# EXTERNAL REFERENCES
+# -------------------
+# WorldCat Search API v. 2 Documentation - https://developer.api.oclc.org/wcv2
+# OCLC API Keys information - https://www.oclc.org/developer/api/keys.en.html
+# OCLC OAuth 2.0 requirements - https://www.oclc.org/developer/api/keys/oauth.en.html
+# Client Credentials Grant - https://www.oclc.org/developer/api/keys/oauth/client-credentials-grant.en.html
+
 
 def set_secrets(client_id: str, client_secret: str):
     # Config setup

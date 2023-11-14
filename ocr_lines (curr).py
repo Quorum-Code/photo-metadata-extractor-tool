@@ -17,28 +17,34 @@ import pickle
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
 
+
 def warn(*args, **kwargs):
     pass
+
+
 import warnings
 warnings.warn = warn
 
 device = 'cpu'
 utils.logging.set_verbosity_error()
-	
+
+
 def read_image(image_path):
     image = Image.open(image_path).convert('RGB')
     return image
-	
+
+
 def ocr(image, processor, model):
-    
     pixel_values = processor(image, return_tensors='pt').pixel_values.to(device)
     generated_ids = model.generate(pixel_values)
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
     return generated_text
-	
+
+
 def eval_new_data(img, processor, num_samples=4, model=None):
     text = ocr(img, processor, model)
     return text
+
 
 def distinguish_rows(lst, thresh=15): 
     sublists = []
@@ -51,6 +57,7 @@ def distinguish_rows(lst, thresh=15):
             yield sublists
             sublists = [lst[i+1]]
     yield sublists
+
 
 def get_distance(preds):
     detections = []
@@ -85,10 +92,12 @@ def get_distance(preds):
             idx = idx +1
     return detections
 
+
 def get_train_val_test_split(arr):
     train, valtest = sklearn.model_selection.train_test_split(arr, train_size=0.8, random_state=42)
     val, test = sklearn.model_selection.train_test_split(valtest, train_size=0.5, random_state=42)
     return train, val, test    
+
 
 def heightDiffCheck(currHeight, windowDict):
     for rec in windowDict.queue:
@@ -119,6 +128,7 @@ def write_dataframe(data, label):
     output_data.to_csv(datapath)
 
     return datapath
+
 
 def text_classification(img, rf_classifier):
     rows = img.shape[0]
@@ -158,6 +168,7 @@ def text_classification(img, rf_classifier):
 
     return label
 
+
 def load_models():
 
     rf_classifier = pickle.load(open("./text_classifier.sav", 'rb'))
@@ -189,7 +200,8 @@ def load_models():
     ).to(device)
     
     return processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline
- 
+
+
 def img_recognition(img, processor_typed, model_typed, processor_hw, model_hw, rf_classifier, pipeline):
 
     ext_txt = ""
@@ -200,7 +212,7 @@ def img_recognition(img, processor_typed, model_typed, processor_hw, model_hw, r
 
     pred = list(distinguish_rows(pred))
 
-    pred = list(filter(lambda x:x!=[], pred))
+    pred = list(filter(lambda x: x != [], pred))
 
     for row in pred:
 
@@ -272,6 +284,7 @@ def read_data():
 
     #dirs = [ "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
 
+    # TODO change to relative URL or pass URL value to func
     dirs = [  "c:/Users/Karkaras/Desktop/img recs" ]#,        
               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/spare_text_imgs",
               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs" ] #,
