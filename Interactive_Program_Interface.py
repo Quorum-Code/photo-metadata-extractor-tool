@@ -91,13 +91,15 @@ class WindowDesigner:
 
         # Create a button to begin image proccesing 
         self.homepage.selectButton = QPushButton('Process Images', parent=self.homepage)
-        self.homepage.selectButton.setGeometry(500,350,200,50)
+        self.homepage.selectButton.setGeometry(500,340,200,50)
         self.homepage.selectButton.clicked.connect(self.parent.beginImageProcessing)
 
         # Toggle theme button 
         toggle_theme_button = QPushButton("Toggle Theme", parent=self.homepage)
         toggle_theme_button.setGeometry(650, 100, 200, 50)
         toggle_theme_button.clicked.connect(self.parent.toggleStyle)
+
+    
 
         # Display window
         self.homepage.show()  # Show the homepage window
@@ -154,12 +156,32 @@ class WindowDesigner:
     
     def createProgressBar(self,window):
         self.status_bar = QProgressBar(parent=window.homepage) 
-        self.status_bar.setGeometry(200,500,400,20)
+        self.status_bar.setGeometry(200,400,400,20)
         self.status_bar.show()
         window.homepage.update()
 
+    def previewResults(self,window,string):
+        self.preview = QLabel(string, parent=window.homepage)
+        self.preview.setGeometry(100,400,200,250)
+        self.preview.show()
+        window.homepage.update()
 
+    def query_finished(self, window):
+        self.downloadButton = QPushButton('Download Results', parent=self.homepage)
+        self.downloadButton.setGeometry(100,700,200,50)
+        self.downloadButton.clicked.connect(self.parent.download_csv)
+        self.downloadButton.show()
+        window.homepage.update()
     
+    def preview(self,window):
+        self.previewButton = QPushButton('Preview Results', parent=self.homepage)
+        self.previewButton.setGeometry(100,640,200,50)
+        self.previewButton.clicked.connect(self.parent.preview_csv)
+        self.previewButton.show()
+        window.homepage.update()
+
+
+        
 class PMETApp(QWidget):
 
     
@@ -301,8 +323,6 @@ class PMETApp(QWidget):
             self.query_worker.start()
             print(self.extracted_csv)
         
-            
-
         else:
             self.designer.choose_path(self.homepage)
     
@@ -343,28 +363,27 @@ class PMETApp(QWidget):
             else:
                 print("create error function ping user to relogin")
             #add a function call for 
-
-
+    """
+        extract_query_data:
+            Pulls processed SuDocs from extracted csv files and sends
+            each unique instance to the query system. Failed queries are 
+            documented according -> error processing is called as a side 
+            effect
+    """
     def extract_query_data(self):
         extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
-        print(extracted_sudocs)
-
+        #extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
+        #print(extracted_sudocs)
         for i in range(len(extracted_sudocs)):
-            print(len(extracted_sudocs))
-            print(extracted_sudocs.loc[i, "SuDoc"])
             query_result = self.OCLC.query(extracted_sudocs.loc[i, "SuDoc"])
             query_result = json.loads(query_result)
             print(query_result)
             if int(query_result["numberOfRecords"]) != 1:
-                if extracted_sudocs.loc[i, "Query Status"]:
-                    extracted_sudocs.loc[i, "Query Status"] += 1
+                if pd.isna(extracted_sudocs.loc[i, "Query Status"]):
+                    extracted_sudocs.loc[i, "Query Status"] = 1  
                 else:
-                    print(extracted_sudocs.loc[i, "Query Status"], extracted_sudocs.loc[i, "SuDoc"])
-                    extracted_sudocs.loc[i, "Query Status"] = 1
-                    print(extracted_sudocs.loc[i, "Query Status"])
-
-                print("Start error sequence")
-
+                    extracted_sudocs.loc[i, "Query Status"] +=1
+            
                 if int(query_result["numberOfRecords"]) > 1:
                     extracted_sudocs.loc[i, "Error Code"] = "multiple records"
 
@@ -387,8 +406,23 @@ class PMETApp(QWidget):
         extracted_sudocs = extracted_sudocs.dropna()
         pending_queries = pd.concat([extracted_sudocs[extracted_sudocs['Error Code'] == "no records"],
                                      extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"]])
-        for i in pending_queries["Error Code"]:
-            print(i)
+        #for i in pending_queries["Error Code"]:
+          # print(i)
+        self.homepage.query_finished(self.homepage)
+        self.homepage.preview(self.homepage)
+
+    def preview_csv(self):
+        extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
+        preview = extracted_data.head().to_string()
+        self.homepage.previewResults(self.homepage, preview)
+
+
+    def download_csv(self):
+        extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
+        extracted_data.to_csv("resulting_data.csv", index=False)
+        
+
+        #self.preview_data(preview) FIX TO DISPLAY HEAD OF CSV
 
 if __name__ == '__main__':
     app = QApplication([])  # Create the QApplication instance
