@@ -4,6 +4,16 @@ import base64
 import configparser
 
 
+def set_secrets(client_id: str, client_secret: str):
+    # Config setup
+    config = configparser.ConfigParser()
+    config['SECRETS'] = {'client_id': f'{client_id}', 'client_secret': f'{client_secret}'}
+
+    # Write
+    with open('.secrets', 'w') as configfile:
+        config.write(configfile)
+
+
 class Query:
     def __init__(self, method, url, headers, data, params):
         self.method = method
@@ -63,6 +73,7 @@ class OCLCSession:
         self.token_body = self.get_auth_body()
 
         # Request Auth token
+        self.auth_response = ""
         self.hasToken = False
         self.token = None
         self.request_auth_token()
@@ -98,10 +109,13 @@ class OCLCSession:
         """
 
         # Get credentials
-        secrets = open(self.config['Directories']['secrets'], "r")
-        client_id = secrets.readline()
-        client_secret = secrets.readline()
-        secrets.close()
+        secrets_file = self.config['Directories']['secrets']
+        secrets = configparser.ConfigParser()
+        secrets.sections()
+        secrets.read(secrets_file)
+
+        client_id = secrets['SECRETS']['client_id']
+        client_secret = secrets['SECRETS']['client_secret']
 
         # Unsigned credentials
         credentials = f"{client_id}:{client_secret}"
@@ -119,6 +133,7 @@ class OCLCSession:
         del credentials
         del signature_bytes
 
+        # return signature
         return signature
 
     def get_auth_headers(self) -> dict:
@@ -148,7 +163,7 @@ class OCLCSession:
         return auth_body
 
     # Requests an auth token
-    def request_auth_token(self) -> str:
+    def request_auth_token(self):
         """
         Sends a query to the OCLC API for an authentication token.
 
@@ -162,12 +177,16 @@ class OCLCSession:
         with requests.Session() as session:
             response = session.send(prepped)
 
+        self.auth_response = response.text
         response_json = json.loads(response.text)
-        token = response_json['access_token']
 
-        self.hasToken = True
-
-        return token
+        if 'access_token' in response_json:
+            token = response_json['access_token']
+            self.hasToken = True
+            self.token = token
+        else:
+            self.hasToken = False
+            self.token = None
 
     def get_query_headers(self) -> dict:
         """
@@ -220,14 +239,14 @@ class OCLCSession:
         query_request = requests.Request("GET", url=self.metadata_service_url,
                                          headers=self.query_headers, params=self.query_body)
         query_prepped = query_request.prepare()
-        print(query_prepped.body)
+        #print(query_prepped.body)
 
         with requests.Session() as session:
             response = session.send(query_prepped)
 
         return response.text
 
-    # Requests a refreshed token
-    def refresh_auth_token(self):
 
-        return
+if __name__ == "__main__":
+    oclcsession = OCLCSession("config.ini")
+
