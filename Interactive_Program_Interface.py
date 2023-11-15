@@ -9,11 +9,12 @@ from oclc_api import Query, OCLCSession
 import json
 import pandas as pd
 
+
 class WindowDesigner:
     def __init__(self, parent):
         self.parent = parent
         self.style_flag = False
-        self.path_value = None #initialize path_value as None
+        self.path_value = None  # initialize path_value as None
         self.path_message = None
         self.status_bar = None
 
@@ -24,7 +25,7 @@ class WindowDesigner:
         
         # Add a label for "Login"
         program_label = QLabel("<h1>Photo-Meta Data Extractor Tool</h1>", parent=parent)
-        program_label.setGeometry(60, 15,750,50)
+        program_label.setGeometry(60, 15, 750, 50)
 
         # Set Humboldt logo icon on taskbar
         parent.setWindowIcon(QIcon("hsu_logo2.png"))
@@ -224,7 +225,6 @@ class PMETApp(QWidget):
         self.credentials_saved = False
         self.OCLC = None
 
-
     def run(self):
         self.show()
         
@@ -272,7 +272,6 @@ class PMETApp(QWidget):
             string = "[SECRETS] \nclient_id= " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
             file.write(string)
             self.credentials_saved = True
-            
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Return:
