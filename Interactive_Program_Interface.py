@@ -3,11 +3,12 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import qdarkstyle
-from ocr_lines_new import read_data
+from ocr_lines_new3 import read_data
 from query_worker import QueryWorker
 from oclc_api import Query, OCLCSession
 import json
 import pandas as pd
+import os
 
 class WindowDesigner:
     def __init__(self, parent):
@@ -15,6 +16,9 @@ class WindowDesigner:
         self.style_flag = False
         self.path_value = None #initialize path_value as None
         self.path_message = None
+        self.status_bar = None
+        self.image_label = None
+        
 
     def create_login_window(self):
         parent = self.parent
@@ -52,6 +56,12 @@ class WindowDesigner:
         parent.exitButton.setGeometry(560, 400, 100,50)
         parent.exitButton.clicked.connect(parent.close_window)
 
+        toggle_style_button = QPushButton("Toggle Style", parent=parent)
+        toggle_style_button.setGeometry(650, 100, 200, 50)
+        toggle_style_button.clicked.connect(parent.toggleStyle)
+
+        parent.show()
+
     """
         create_homepage_window:
             Creates an instance of the homepage instance of
@@ -61,15 +71,15 @@ class WindowDesigner:
     def create_homepage_window(self):
         parent = self.parent
         self.homepage = QMainWindow()  # Create a new window for the homepage
-        self.homepage.setWindowTitle("PMET Homepage")
+        self.homepage.setWindowTitle(" PMET Homepage")
         self.homepage.setGeometry(100, 100, 900, 900)
         self.homepage.setWindowIcon(QIcon("hsu_logo2.png"))
         # Add widgets specific to the homepage
         homepage_label = QLabel("Welcome to the PMET Homepage", parent=self.homepage)
         
+        print(type(self.status_bar))
         homepage_label.setGeometry(60, 60, 400, 40)  # Adjust the position and size of the label
             
-
         # Create select folder button along with label
         self.homepage.selectButton = QPushButton('Select File', parent=self.homepage)
         self.homepage.selectButton.setGeometry(500, 200, 120, 50)
@@ -89,7 +99,7 @@ class WindowDesigner:
 
         # Create a button to begin image proccesing 
         self.homepage.selectButton = QPushButton('Process Images', parent=self.homepage)
-        self.homepage.selectButton.setGeometry(500,350,200,50)
+        self.homepage.selectButton.setGeometry(500,340,200,50)
         self.homepage.selectButton.clicked.connect(self.parent.beginImageProcessing)
 
         # Toggle theme button 
@@ -97,8 +107,70 @@ class WindowDesigner:
         toggle_theme_button.setGeometry(650, 100, 200, 50)
         toggle_theme_button.clicked.connect(self.parent.toggleStyle)
 
-        # Display window
         self.homepage.show()  # Show the homepage window
+
+    def create_verification_window(self):
+        self.verification_window = QMainWindow()  # Create a new window for the homepage
+        self.verification_window.setWindowTitle(" PMET: Verifier")
+        self.verification_window.setGeometry(100, 100, 900, 900)
+        self.verification_window.setWindowIcon(QIcon("hsu_logo2.png"))
+
+        self.verification_window.verify = QPushButton("Verify", parent=self.verification_window)
+        self.verification_window.verify.setGeometry(700, 800,100,50)
+        self.verification_window.verify.clicked.connect(self.parent.update_exceptions)
+
+        self.verification_window.show()
+        return self.verification_window
+
+    def update_verification_window(self, image_path, extracted_sudoc,extracted_title):
+        
+        if self.image_label:
+            self.image_label.deleteLater()
+            
+
+        pixmap = QPixmap(image_path)
+
+        aspect_ratio = pixmap.width() / pixmap.height()
+
+        max_width = 600
+        max_height = 600
+
+        new_width = min(max_width, pixmap.width())
+        new_height = min(max_height, pixmap.height())
+
+        pixmap = pixmap.scaled(new_width,new_height, Qt.KeepAspectRatio)
+
+        self.image_label = QLabel(parent = self.verification_window)
+        self.image_label.setPixmap(pixmap)
+
+        print("VERIFICATION IS CALLED")
+        extracted_title = str(extracted_title)
+        extracted_sudoc = str(extracted_sudoc)
+
+        self.verification_window.sudoc_textbox = QLineEdit(extracted_sudoc, parent=self.verification_window)
+        self.verification_window.sudoc_label = QLabel("SuDoc", parent=self.verification_window)
+        self.verification_window.title_label = QLabel("Title", parent=self.verification_window)
+    
+        if len(extracted_title) > 200:
+            extracted_title = extracted_title[::300]
+        self.verification_window.title_textbox = QLineEdit(extracted_title, parent=self.verification_window)
+
+        self.verification_window.sudoc_label.setGeometry(10, 710, 300, 50)
+        self.verification_window.title_label.setGeometry(450, 710, 300, 50)
+
+        self.image_label.setGeometry(10, 10, pixmap.width(), pixmap.height())
+        self.verification_window.sudoc_textbox.setGeometry(10, 760, 300, 30)
+        self.verification_window.title_textbox.setGeometry(350, 760, 400, 30)
+
+        self.image_label.show()
+        self.verification_window.sudoc_textbox.show()
+        self.verification_window.title_textbox.show()
+        self.verification_window.sudoc_label.show()
+        self.verification_window.title_label.show()
+
+        self.verification_window.update()
+        self.verification_window.show()
+
 
     def close_window(self):
         self.parent.close()
@@ -142,14 +214,102 @@ class WindowDesigner:
 
     def single_query_warning(self,window):
         self.path_warning = QLabel("Please wait for the first query to finish", parent=window.homepage)
-        self.path_warning.setGeometry(100,700,850,50)
+        self.path_warning.setGeometry(100,700,450,50)
         self.path_warning.show()
         window.homepage.update()
 
-    
-class PMETApp(QWidget):
+    """
+        updateProgressBar
+            updates the progress bar     
+    """
 
+    def updateProgressBar(self, progress):
+        progress_percentage = int(progress * 100)
+        self.status_bar.setValue(progress_percentage)
+
+    """
+        createProgressBar
+            Generates an initial progress bar and shows it within
+            then window
+    """
     
+    def createProgressBar(self,window):
+        self.status_bar = QProgressBar(parent=window.homepage) 
+        self.status_bar.setGeometry(200,400,400,20)
+        self.status_bar.show()
+        window.homepage.update()
+
+    """
+        previewResults
+            Updates the windo to display a button associated
+            with the function "preview"    
+    """
+
+
+    def previewResults(self,window,string):
+        #if self.preview:
+           # self.preview.deleteLater()
+        self.preview = QLabel(string, parent=window.homepage)
+        self.preview.setGeometry(100,400,200,250)
+        self.preview.show()
+        window.homepage.update()
+
+    """
+        query_finished
+            Updates the window to download the results from a successful
+            query
+    """
+
+    def query_finished(self, window):
+        self.downloadButton = QPushButton('Download Results', parent=self.homepage)
+        self.downloadButton.setGeometry(100,700,200,50)
+        self.downloadButton.clicked.connect(self.parent.download_csv)
+        self.downloadButton.show()
+        window.homepage.update()
+
+    """
+        previewResults
+            Displays in text form the head of the error codes
+            within the dataframe after the query process
+    """
+    
+    def preview(self,window):
+        self.previewButton = QPushButton('Preview Results', parent=self.homepage)
+        self.previewButton.setGeometry(100,640,200,50)
+        self.previewButton.clicked.connect(self.parent.preview_csv)
+        self.previewButton.show()
+        window.homepage.update()
+
+    """
+        toggleClose
+            Creates a buttun on the homepage window and connects
+            its to the new_query function within the PMET App. Allowing
+            the user to reinitialize the program and begin a new query.
+    """
+
+    def toggleClose(self,window):
+        self.closeButton = QPushButton('New Query', parent=self.homepage)
+        self.closeButton.setGeometry(100,760,200,50)
+        self.closeButton.clicked.connect(self.parent.new_query)
+        self.closeButton.show()
+        window.homepage.update()
+
+    """
+        querySuccessRate: 
+            Displays the total number of documents which are able
+            to be found during the query process
+    
+    """
+
+    def querySuccessRate(self, window, found, total):
+        self.results = QLabel(str(found) + " of " + str(total) + " found.", parent=self.homepage)
+        self.results.setGeometry(500, 650, 120, 50)
+        self.results.show()
+        window.homepage.update()
+
+
+        
+class PMETApp(QWidget):
     """
         Attributes:
 
@@ -167,7 +327,13 @@ class PMETApp(QWidget):
 
         credential: Flag variable for active API token session.
 
-        credentials_saved: Flag variable for creation of .sercrets file    .
+        credentials_saved: Flag variable for creation of .sercrets file  
+
+        OCLC: Holds an instance of the OCLC class for the query process  
+
+        verification_window: Holds an instance of the WindowDesigner class 
+
+        exceptions: A list value of all pending queries after a query instantiation
     """
 
     def __init__(self):
@@ -188,6 +354,9 @@ class PMETApp(QWidget):
         self.credential = False
         self.credentials_saved = False
         self.OCLC = None
+        self.verification_window = None
+        self.exceptions = None
+
 
     def run(self):
         self.show()
@@ -200,10 +369,9 @@ class PMETApp(QWidget):
     def open_home(self):
         self.grab_credentials()
         if self.credentials_saved:
-            if self.credentials_saved:
-                self.designer.parent.close()
-                self.homepage = WindowDesigner(self) 
-                self.homepage.create_homepage_window() # Store the homepage reference
+            self.designer.parent.close()
+            self.homepage = WindowDesigner(self) 
+            self.homepage.create_homepage_window() # Store the homepage reference
         else:
             # Display a warning message when login fails
             QMessageBox.critical(self, "Error", "Please input your credentials")
@@ -215,7 +383,12 @@ class PMETApp(QWidget):
         self.close()
         self.homepage = None
 
-    def authenticate_user(self):
+    """
+        authenticate_user:
+            Returns the login status code for collecting the API token
+    """
+
+    def authenticate_user(self) -> int():
         if self.OCLC.hasToken:
             self.credential = True
             print("login success")
@@ -230,7 +403,7 @@ class PMETApp(QWidget):
             the .sercrets file for later proccessing
     """
 
-    def grab_credentials(self):
+    def grab_credentials(self) -> None:
         if not self.credentials_saved:
             file = open(".secrets_temp","w")
             string = "[SECRETS] \nclient_id= " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
@@ -238,7 +411,7 @@ class PMETApp(QWidget):
             self.credentials_saved = True
             
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key_Return:
             self.open_home()
    
@@ -246,10 +419,9 @@ class PMETApp(QWidget):
         openFile: 
             Allows user to toggle directory path for image proccessing
     """
-    def openFile(self):
+    def openFile(self) -> None:
         options = QFileDialog.Options()
         directoryPath = QFileDialog.getExistingDirectory(self, "Select a Directory",   options=options)
-
         if directoryPath:
             print("Selected File:", directoryPath)
             self.directory_path=directoryPath
@@ -258,7 +430,7 @@ class PMETApp(QWidget):
         toggleStyle:
             Changes window theme
     """
-    def toggleStyle(self):
+    def toggleStyle(self) -> None:
         self.style_flag = not self.style_flag  # Toggle the style flag
         if self.style_flag:
             app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
@@ -271,14 +443,18 @@ class PMETApp(QWidget):
             query proccess from user-selected folder on another thread
     """
 
-    def beginImageProcessing(self):
+    def beginImageProcessing(self) -> None:
         if self.query_worker is not None:
             print("A query is already in progress. Please wait for it to finish")
             self.designer.single_query_warning(self.homepage)
         elif self.directory_path:
+            self.designer.createProgressBar(self.homepage)
             self.query_worker = QueryWorker(self.directory_path)
             self.query_worker.finished.connect(self.queryFinished)
             self.query_worker.result_ready.connect(self.handleResult)  # Connect the signal to the slot
+            self.query_worker.progress_updated.connect(self.designer.updateProgressBar)  # Connect the progress signal
+          
+            self.designer.status_bar.setValue(0)
             self.query_worker.start()
             print(self.extracted_csv)
         else:
@@ -289,59 +465,71 @@ class PMETApp(QWidget):
             Removes query worker instance
     """
 
-    def queryFinished(self):
+    def queryFinished(self) -> None:
         print("Query finished")
         self.query_worker = None
+        self.designer.status_bar.setValue(100)
 
-    def handleResult(self,result):
+    """
+        handleResult:
+            Sets the attribute to the extracted text
+    """
+
+    def handleResult(self,result) -> None:
         print("Query Result:", result)
         self.extracted_csv = result
     
     """
         BeginQuery:
             Begins processing already extracted text through begining 
-            a query through the CCLC class
+            a query through the CCLC class.
+            Error handling: 
+                If there is not extracted csv their is no function call
+                If the user has a credential data is processed
+                If the user has no credential the OCLC token is requested 
+                    then data is processed if the token is recieved
     """
 
-    def beginQuery(self):
+    def beginQuery(self) -> None:
         if not self.extracted_csv:
             print("ping user to process images first")
             #FIX
         if self.credential:
-            print("no credential")  
+            print("current credential")
             self.extract_query_data()
         else:
-            print("current credential")
+            print("no current credential")  
             self.OCLC = OCLCSession("config.ini") #create OCLCSession Instance
             token_response = self.authenticate_user() #Verify user login to the system
             if token_response == 200:
                 self.credentail = True
-                self.extract_query_data()              
+                self.extract_query_data()   
+                print("credential successfully created")           
             else:
                 print("create error function ping user to relogin")
             #add a function call for 
-
-
+    """
+        extract_query_data:
+            Pulls processed SuDocs from extracted csv files and sends
+            each unique instance to the query system. Failed queries are 
+            documented according -> error processing is called as a side 
+            effect
+    """
     def extract_query_data(self):
         extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
-        print(extracted_sudocs)
-
+        #extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
+        #print(extracted_sudocs)
+        count = 0
         for i in range(len(extracted_sudocs)):
-            print(len(extracted_sudocs))
-            print(extracted_sudocs.loc[i, "SuDoc"])
             query_result = self.OCLC.query(extracted_sudocs.loc[i, "SuDoc"])
             query_result = json.loads(query_result)
             print(query_result)
             if int(query_result["numberOfRecords"]) != 1:
-                if extracted_sudocs.loc[i, "Query Status"]:
-                    extracted_sudocs.loc[i, "Query Status"] += 1
+                if pd.isna(extracted_sudocs.loc[i, "Query Status"]):
+                    extracted_sudocs.loc[i, "Query Status"] = 1  
                 else:
-                    print(extracted_sudocs.loc[i, "Query Status"], extracted_sudocs.loc[i, "SuDoc"])
-                    extracted_sudocs.loc[i, "Query Status"] = 1
-                    print(extracted_sudocs.loc[i, "Query Status"])
-
-                print("Start error sequence")
-
+                    extracted_sudocs.loc[i, "Query Status"] +=1
+            
                 if int(query_result["numberOfRecords"]) > 1:
                     extracted_sudocs.loc[i, "Error Code"] = "multiple records"
 
@@ -353,26 +541,178 @@ class PMETApp(QWidget):
 
                 extracted_sudocs.loc[i, "Title"] = text
                 extracted_sudocs.loc[i, "Publication Year"] = year
-
+                extracted_sudocs.loc[i, "Error Code"] = "Data Collected"
+                count += 1
+        total = len(extracted_sudocs)
         extracted_sudocs.reset_index(drop=True, inplace=True)
         extracted_sudocs.to_csv("extracted_data/extracted_data.csv", index=False)
-        self.verify_extracted_data()
+        if count != total:
+            self.verify_extracted_data()
 
+    """
+        verify_extracted_data:
+            Verification process for query failures on the first instance 
+            Implementation TBD
+    
+    """
 
     def verify_extracted_data(self):
         extracted_sudocs = pd.read_csv('./extracted_data/extracted_data.csv')
-        extracted_sudocs = extracted_sudocs.dropna()
         pending_queries = pd.concat([extracted_sudocs[extracted_sudocs['Error Code'] == "no records"],
                                      extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"]])
-        for i in pending_queries["Error Code"]:
-            print(i)
+        self.exceptions = pending_queries
+   
+        self.verification_window = WindowDesigner(self)
+        self.verification_window = self.designer.create_verification_window()
+        self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'])   
+
+        self.homepage.query_finished(self.homepage)
+        self.homepage.preview(self.homepage)
+        self.homepage.toggleClose(self.homepage)
+
+        """ 
+            next_instance:
+                records user verified data from the verifier window and writes it
+                to the csv
+        
+        """
+
+    def next_instance(self):
+        extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
+        identifier = self.exceptions.iloc[0]['ID']
+    
+        sudoc = self.verification_window.sudoc_textbox.text()
+        title = self.verification_window.title_textbox.text()
+
+        extracted_sudocs.loc[identifier,'SuDoc'] = sudoc
+        extracted_sudocs.loc[identifier, 'Title'] = title
+        
+        extracted_sudocs.reset_index(drop=True, inplace=True)
+        extracted_sudocs.to_csv("extracted_data/extracted_data.csv", index=False)
+
+    """
+        update_exceptions:
+            Reads and writes updated user which user verifies/inputs
+            Deletes instance from verification list, and updates[closes]
+            the verification window for the next verification instance
+    """
+
+
+    def update_exceptions(self)  -> None:
+        if len(self.exceptions) > 1:
+            self.next_instance()
+            self.exceptions = self.exceptions.drop(self.exceptions.index[0])
+            self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'])
+        else:
+            self.next_instance()
+            self.exceptions = self.exceptions.drop(self.exceptions.index[0])
+            self.verification_window.close()
+            requeried_result = self.query_sudoc()
+            self.merge_pending_queries(requeried_result)
+    
+    
+    """
+        query_sudoc:
+            Instantiates the query process on the pending_quires dataframe
+    """
+
+
+    def query_sudoc(self) -> pd.DataFrame():
+        extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
+        pending_queries = pd.concat([extracted_sudocs[extracted_sudocs['Error Code'] == "no records"],
+                                     extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"]])
+        for i in range(len(pending_queries)):
+            query_result = self.OCLC.query(pending_queries.iloc[i]["SuDoc"])
+            query_result = json.loads(query_result)
+            print(query_result)
+            if int(query_result["numberOfRecords"]) != 1:
+                if pd.isna(pending_queries.iloc[i]["Query Status"]):
+                    pending_queries.iloc[i]["Query Status"] = 1  
+                else:
+                    pending_queries.iloc[i]["Query Status"] +=1
+            
+                if int(query_result["numberOfRecords"]) > 1:
+                    pending_queries.iloc[i]["Error Code"] = "multiple records"
+
+                if int(query_result["numberOfRecords"]) == 0:
+                    pending_queries.iloc[i]["Error Code"] = "no records"
+            else:
+                text = query_result['bibRecords'][0]['title']['mainTitles'][0]['text']
+                year = query_result['bibRecords'][0]['date']['publicationDate']
+
+                pending_queries.iloc[i]["Title"] = text
+                pending_queries.iloc[i]["Publication Year"] = year
+                pending_queries.iloc[i]["Error Code"] = "Data Collected"
+        return pending_queries
+
+    """
+        merge_pending_queries:
+            writes the finalized results from the verification process back
+            into the main csv
+    """
+
+    def merge_pending_queries(self, outliers):
+        extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
+        for i in outliers['ID']:
+            extracted_sudocs.loc[i,'SuDoc'] = outliers.loc[i,'SuDoc']
+            extracted_sudocs.loc[i, 'Title'] = outliers.loc[i,'Title']
+            extracted_sudocs.loc[i, 'Publication Year'] = outliers.loc[i,'Publication Year']
+        count = len(extracted_sudocs[extracted_sudocs["Error Code"] == "Data Collected"])
+        total = len(extracted_sudocs)
+        self.homepage.querySuccessRate(self.homepage,count,total)
+    
+    """
+        preview_csv:
+            displays a preview of the first 5[or less] instances of the
+            pulled data on the homepage window
+    
+    """
+
+    def preview_csv(self)->None:
+        extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
+        preview = extracted_data["Error Code"].head().to_string()
+        self.homepage.previewResults(self.homepage, preview)
+    
+    """
+        download_csv: 
+            Saves the resulting data from the query into the users
+            downloads folder
+    """
+
+    def download_csv(self)->None:
+        extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
+        extracted_data.to_csv("~/Downloads/resulting_data.csv", index=False)
+
+    """
+        new_query: 
+            Resets the interface. Will return the user to the login
+            window and reinitialize all PMET APP flags and variables.
+            Serves the purpose of restricting multiple queries in order
+            to stay within the token time frame
+    """
+
+    def new_query(self):
+        print("Function was called")
+        #os.remove("./extracted_data/extracted_data.csv") UNCOMMENT IN FINAL VERSION!
+        self.homepage.parent.close()
+        self.homepage = None
+        self.designer = WindowDesigner(self)
+        print("Creating Login Window")
+        
+        self.designer.create_login_window()
+        self.homepage = None 
+        self.directory_path= None
+        self.style_flag = False 
+        self.query_worker = None
+        self.extracted_csv = None
+        self.credential = False
+        self.credentials_saved = False
+        self.OCLC = None
+        #Reset entire system and all flag variables to reinstantiate the window
+        
 
 if __name__ == '__main__':
     app = QApplication([])  # Create the QApplication instance
     pmet_app = PMETApp()
-    toggle_style_button = QPushButton("Toggle Style", pmet_app)
-    toggle_style_button.setGeometry(650, 100, 200, 50)
-    toggle_style_button.clicked.connect(pmet_app.toggleStyle)
-  
     pmet_app.run()
     sys.exit(app.exec())  # Start the event loop with app.exec()
