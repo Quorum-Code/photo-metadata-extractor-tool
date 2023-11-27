@@ -9,7 +9,8 @@ def set_secrets(client_id: str, client_secret: str):
     config = configparser.ConfigParser()
     config['SECRETS'] = {'client_id': f'{client_id}', 'client_secret': f'{client_secret}'}
 
-    # Write
+    # Write to file
+    # TODO dynamic secrets file name from config.ini
     with open('.secrets', 'w') as configfile:
         config.write(configfile)
 
@@ -177,16 +178,17 @@ class OCLCSession:
         with requests.Session() as session:
             response = session.send(prepped)
 
-        self.auth_response = response.text
-        response_json = json.loads(response.text)
+        if response:
+            self.auth_response = response.text
+            response_json = json.loads(response.text)
 
-        if 'access_token' in response_json:
-            token = response_json['access_token']
-            self.hasToken = True
-            self.token = token
-        else:
-            self.hasToken = False
-            self.token = None
+            if 'access_token' in response_json:
+                token = response_json['access_token']
+                self.hasToken = True
+                self.token = token
+            else:
+                self.hasToken = False
+                self.token = None
 
     def get_query_headers(self) -> dict:
         """

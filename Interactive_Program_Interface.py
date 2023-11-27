@@ -354,8 +354,8 @@ class PMETApp(QWidget):
             self.extract_query_data()
         else:
             print("current credential")
-            self.OCLC = OCLCSession("config.ini") #create OCLCSession Instance
-            token_response = self.authenticate_user() #Verify user login to the system
+            self.OCLC = OCLCSession("config.ini")  # create OCLCSession Instance
+            token_response = self.authenticate_user()  # Verify user login to the system
             if token_response == 200:
                 self.credentail = True
                 self.extract_query_data()              

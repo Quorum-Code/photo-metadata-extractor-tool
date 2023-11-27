@@ -5,6 +5,8 @@ TODO
 * Add better query preview functions to OCLCSession
 * Add status code response checks to OCLCSession, i.e. invalid credentials returns some code
 
+* IMPORTANT do we need to include licenses or credits for mlm's
+
 IN-PROGRESS
 =====
 
