@@ -5,13 +5,14 @@ import numpy as np
 from string import digits, ascii_letters, punctuation
 import math
 import cv2
-import tensorflow as tf
+#import tensorflow as tf
 import pandas as pd
 import keras_ocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 #import torch
 import pickle
 from concurrent.futures import ThreadPoolExecutor
+
 from multiprocessing import cpu_count
 import time
 import gc
@@ -26,16 +27,13 @@ count = 0
 device = 'cpu'
 utils.logging.set_verbosity_error()
 
+keras_ocr.config.configure()
+
 def ocr(image, processor, model):
-    
     pixel_values = processor(image, return_tensors='pt').pixel_values.to(device)
     generated_ids = model.generate(pixel_values)
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
     return generated_text
-	
-def eval_new_data(img, processor, num_samples=4, model=None):
-    text = ocr(img, processor, model)
-    return text
 
 def distinguish_rows(lst, thresh=15): 
     sublists = []
@@ -72,6 +70,19 @@ def get_distance(preds):
             idx = idx +1
     return detections
 
+def pub_year_extraction(data):
+    pub_year = ""
+    for phrase in data.split():
+        if phrase.isdigit() and (1600 <= int(phrase) <= datetime.datetime.today().year+1):
+            pub_year = phrase
+    return pub_year
+
+def merge_dicts(data):
+    merged_dict = data[0]
+    for idx in range(len(data)):
+        merged_dict.update(data[idx])
+    return merged_dict
+
 def write_dataframe(data, label):
 
     print("Writing Out Data to CSV")
@@ -89,29 +100,36 @@ def write_dataframe(data, label):
 
     os.makedirs(init_datapath, exist_ok=True)
 
-    #print(datapath)
+    data = merge_dicts(data)
 
-    output_data = pd.DataFrame(columns=['Title', 'SuDoc', 'Publication Year','Error Code','Query Status'])
+    output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year', 'File Name','Error Code','Query Status'])
 
-    #print(data)
+    idx = 0
 
-    for idx in range(len(data)):
+    #for idx in range(len(data)):
+    for key in data:
 
-            label_pred = np.reshape(text_feature_extractor(data[idx]), (1, -1)) 
+            #print(data[0][key])
+
+            label_pred = np.reshape(text_feature_extractor(data[key]), (1, -1))
 
             #print(label_pred)
 
             text_type = label_classifier.predict(label_pred)[0]
 
+            pub_year = pub_year_extraction(data[key])
+
             if text_type == 'title':
                 text_type = 'Title'
             elif text_type == 'sudoc':
                 text_type = 'SuDoc'
-                data[idx] = data[idx].replace(" ", "")
+                data[key] = data[key].replace(" ", "")
 
-            output_data = pd.concat([pd.DataFrame([{text_type:data[idx]}]), output_data], ignore_index=True)
+            output_data = pd.concat([output_data, pd.DataFrame([{'ID': idx, text_type: data[key], 'Publication Year': pub_year,
+                                    'File Name': key}],)], ignore_index=True)
+            idx = idx + 1
 
-    #print(output_data)
+    print(output_data)
 
     output_data.to_csv(datapath, index=False)
 
@@ -176,14 +194,13 @@ def load_models():
 
     recognizer.compile()
 
-    recognizer.model.load_weights('classifiers/curr_recognizer.h5')
-    #recognizer.model.load_weights('MLModelsList/curr_recognizer.h5')
+    #recognizer.model.load_weights('classifiers/curr_recognizer.h5')
+    recognizer.model.load_weights('MLModelsList/curr_recognizer.h5')
 
     pipeline = keras_ocr.pipeline.Pipeline(detector=detector, recognizer=recognizer)
 
     print("Loading trocr models")
 
-    '''
     processor_typed = TrOCRProcessor.from_pretrained('./MLModelsList/ocr_models/typed_ocr_models')
     model_typed = VisionEncoderDecoderModel.from_pretrained(
         './MLModelsList/ocr_models/typed_ocr_models'
@@ -193,7 +210,6 @@ def load_models():
     model_typed = VisionEncoderDecoderModel.from_pretrained(
         './ocr_models/typed_ocr_models'
     ).to(device)
-
     '''
     processor_hw = TrOCRProcessor.from_pretrained('./MLModelsList/ocr_models/hw_ocr_models')
     model_hw = VisionEncoderDecoderModel.from_pretrained(
@@ -204,11 +220,11 @@ def load_models():
     model_hw = VisionEncoderDecoderModel.from_pretrained(
         './ocr_models/hw_ocr_models'
     ).to(device)
+    '''
 
     print("Successfully Loaded Models")
     
-    return processor_typed, model_typed, processor_hw, model_hw, \
-           writing_classifier, pipeline
+    return processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline
 
 def text_feature_extractor(value):
 
@@ -236,73 +252,77 @@ def img_recognition(img_dir, processor_typed, model_typed, processor_hw,
                     model_hw, writing_classifier, pipeline, total_images, progress_signal):
     global count
 
-    #print("Beggining extraction on image: ", img_dir)
+    extractions = {}
 
-    img = keras_ocr.tools.read(img_dir)
+    for img_path in img_dir:
 
-    ext_txt = ""
+        print("Beggining extraction  on image: ", img_path)
 
-    pred = pipeline.recognize([img])
+        img = keras_ocr.tools.read(img_path)
 
-    pred = get_distance(pred)
+        ext_txt = ""
 
-    pred = list(distinguish_rows(pred))
+        #print([img])
 
-    pred = list(filter(lambda x:x!=[], pred))
+        pred = pipeline.recognize([img])
 
-    for row in pred:
+        pred = get_distance(pred)
 
-        row = sorted(row, key=lambda x:x['dist_from_origin'])
+        pred = list(distinguish_rows(pred))
 
-        for box in row:
+        pred = list(filter(lambda x:x!=[], pred))
 
-            uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0 
-            lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0 
-            ubx = int(round(box['top_left_x'])) if int(round(box['top_left_x'])) >= 0 else 0 
-            lbx = int(round(box['bottom_right_x'])) if int(round(box['bottom_right_x'])) >= 0 else 0 
+        for row in pred:
+
+            row = sorted(row, key=lambda x:x['dist_from_origin'])
+
+            for box in row:
+
+                uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0
+                lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0
+                ubx = int(round(box['top_left_x'])) if int(round(box['top_left_x'])) >= 0 else 0
+                lbx = int(round(box['bottom_right_x'])) if int(round(box['bottom_right_x'])) >= 0 else 0
             
-            if ubx >= lbx:
-                ubx = ubx - ( ubx - lbx + 1 )
+                if ubx >= lbx:
+                    ubx = ubx - ( ubx - lbx + 1 )
 
-            if uby >= lby:
-                uby = lby - ( uby - lby + 1 )
+                if uby >= lby:
+                    uby = lby - ( uby - lby + 1 )
 
-            cropped_img = img[uby:lby,ubx:lbx]
+                cropped_img = img[uby:lby,ubx:lbx]
             
-            label = text_classification(cropped_img, writing_classifier)
+                label = text_classification(cropped_img, writing_classifier)
 
-            if label in [ 'Printed_extended', 'Other_extended' ]:
+                if label in [ 'Printed_extended', 'Other_extended' ]:
 
-                ext_txt = ext_txt + " " + eval_new_data(
-                    cropped_img,
-                    processor=processor_typed,
-                    num_samples=20,
-                    model=model_typed
-                    ) 
+                    ext_txt = ext_txt + " " + ocr(
+                        cropped_img,
+                        processor=processor_typed,
+                        model=model_typed
+                        )
 
-            elif label in [ 'Handwritten_extended', 'Mixed_extended' ]:
+                elif label in [ 'Handwritten_extended', 'Mixed_extended' ]:
 
-                ext_txt = ext_txt + " " + eval_new_data(
-                    cropped_img,
-                    processor=processor_hw,
-                    num_samples=20,
-                    model=model_hw
-                    )
+                    ext_txt = ext_txt + " " + ocr(
+                        cropped_img,
+                        processor=processor_hw,
+                        model=model_hw
+                        )
 
-            ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
+                ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
 
-    gc.collect()
+        #print(ext_txt)
 
-    #print("Completed extraction on image: ", img_dir)
+        extractions[img_path]=ext_txt
 
-    count +=1
-    progress_signal.emit(count/total_images)
+        #print("Completed extraction on image: ", img_dir)
 
-    return ext_txt
+        count +=1
+        progress_signal.emit(count/total_images)
+
+    return extractions
 
 def par_img_proc_caller(img_dir, progress_signal, total_images):
-
-    #load models outside of this call
 
     start_time = time.time()
 
@@ -317,26 +337,30 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     time_file.write("Model Loading Time: " + str(load_time) + "\n")
 
     extracted_data = []
-    
-    exe = ThreadPoolExecutor(4)
+
+    num_workers = 2 if cpu_count() > 5 else 1
+
+    exe = ThreadPoolExecutor(num_workers)
+
+    img_list_split = np.array_split(img_dir, num_workers)
+
     i = 0
 
     start_time = time.time()
 
-    #print("Total images", total_images)
-    for img in img_dir:
-        extracted_data.append(exe.submit(img_recognition, img, processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline, total_images, progress_signal))
+    for worker in range(num_workers):
+        extracted_data.append(exe.submit(img_recognition, img_list_split[worker], processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline, total_images, progress_signal))
+        #extracted_data.append(exe.submit(img_recognition, img_list_split[worker], processor_typed, model_typed, processor_hw, model_hw, writing_classifier,
+        #           pipeline, total_images))  # , progress_signal))
 
     for obj in range(len(extracted_data)):
         extracted_data[obj] = extracted_data[obj].result()
 
-    #print(extracted_data)
+    print(extracted_data)
 
     load_time = time.time() - start_time
 
     time_file.write("Total Extraction Time: " + str(load_time) + "\n")
-
-    gc.collect()
 
     return extracted_data
 '''
@@ -349,14 +373,15 @@ def read_data():
 
     #dirs = [ "c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs" ]
 
-    dirs = [  "c:/Users/Karkaras/Desktop/proc_sample_imgs/typed_sudoc_imgs"]#,
-              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/hw_sudocs",
-              #"c:/Users/Karkaras/Desktop/proc_sample_imgs/title_imgs",
-              #"c:/Users/Karkaras/Desktop/Sudocsv2",
-              #"c:/Users/Karkaras/Desktop/classifier scripts/proc_sample_imgs/spare_text_imgs",
-              #"c:/Users/Karkaras/Desktop/img recs"]
-            
-
+    dirs = [ #'C:/Users/Duff/Desktop/bryans files/proc_sample_imgs/proc_sample_imgs/typed_sudoc_imgs' ]#,
+              #"C:/Users/Duff/Desktop/bryans files/proc_sample_imgs/proc_sample_imgs/hw_sudocs" ] #,
+              #"C:/Users/Duff/Desktop/bryans files/proc_sample_imgs/proc_sample_imgs/title_imgs" ]#,
+              #"C:/Users/Duff/Desktop/bryans files/proc_sample_imgs/proc_sample_imgs/Sudocsv2",
+              #"C:/Users/Duff/Desktop/bryans files/proc_sample_imgs/proc_sample_imgs/spare_text_imgs"
+               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/test_set/test_hw_sudoc",
+               #"c:/Users/Karkaras/Desktop/proc_sample_imgs/test_set/test_title"#,
+               "c:/Users/Karkaras/Desktop/proc_sample_imgs/test_set/test_typed_sudoc"
+        ]
     for path in dirs:
     
         img_dir = os.listdir(path)
@@ -392,17 +417,17 @@ def read_data(path,progress_signal):
 
     img_dir = [ os.path.join(path, img) for img in img_dir ]
 
-    images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
-    total_images = len(images_coll)
-    extracted_data = par_img_proc_caller(images_coll, progress_signal, total_images)
+    #images_coll = [ keras_ocr.tools.read(img) for img in img_dir ]
+    total_images = len(img_dir)
+    extracted_data = par_img_proc_caller(img_dir, progress_signal, total_images)
 
         #extracted_data = img_recognition(img_dir, images_coll)
 
     datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
 
-    return(datapath)
-   
     print("finished image reading lines")
+
+    return(datapath)
 
 #read_data()
 
