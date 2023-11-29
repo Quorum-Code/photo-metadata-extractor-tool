@@ -6,7 +6,7 @@ from oclc_api import *
 class TestOCLCAPI(unittest.TestCase):
     def setUp(self) -> None:
         self.good_session = OCLCSession()
-        self.bad_session = OCLCSession("test_config.ini")
+        self.bad_session = OCLCSession("tests/oclc_session/test_config.ini")
 
     def tearDown(self) -> None:
         pass
