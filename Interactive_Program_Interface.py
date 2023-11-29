@@ -134,7 +134,8 @@ class WindowDesigner:
         self.image_label = QLabel(parent = self.verification_window)
         pixmap = QPixmap(image_path)
 
-        aspect_ratio = pixmap.width() / pixmap.height()
+        if pixmap.height() > 0:
+            aspect_ratio = pixmap.width() / pixmap.height()
 
         max_width = 600
         max_height = 600
@@ -565,7 +566,7 @@ class PMETApp(QWidget):
     """
     def extract_query_data(self):
         extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
-        #extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
+        extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
         #print(extracted_sudocs)
         count = 0
         for i in range(len(extracted_sudocs)):
@@ -607,7 +608,8 @@ class PMETApp(QWidget):
     def verify_extracted_data(self):
         extracted_sudocs = pd.read_csv('./extracted_data/extracted_data.csv')
         pending_queries = pd.concat([extracted_sudocs[extracted_sudocs['Error Code'] == "no records"],
-                                     extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"]])
+                                     extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"],
+                                     extracted_sudocs[extracted_sudocs["SuDoc"].notna()]])
         self.exceptions = pending_queries
    
         self.verification_window = WindowDesigner(self)
@@ -652,7 +654,7 @@ class PMETApp(QWidget):
         if len(self.exceptions) > 1:
             self.next_instance()
             self.exceptions = self.exceptions.drop(self.exceptions.index[0])
-            self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'])
+            self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'],self.exceptions.iloc[0]['Publication Year'])
         else:
             self.next_instance()
             self.exceptions = self.exceptions.drop(self.exceptions.index[0])
@@ -731,6 +733,7 @@ class PMETApp(QWidget):
 
     def download_csv(self)->None:
         extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
+        extracted_data = extracted_data[extracted_data.columns["ID","Title","SuDoc","Publication Year"]]
         extracted_data.to_csv("~/Downloads/resulting_data.csv", index=False)
 
     """
