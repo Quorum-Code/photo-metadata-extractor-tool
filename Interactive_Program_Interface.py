@@ -132,9 +132,9 @@ class WindowDesigner:
             self.image_label.deleteLater()
             
         self.image_label = QLabel(parent = self.verification_window)
-        pixmap = QPixmap(image_path)
+        pixmap = QPixmap(str(image_path))
 
-        if pixmap.height() > 0:
+        if(pixmap.height() > 0):
             aspect_ratio = pixmap.width() / pixmap.height()
 
         max_width = 600
@@ -609,7 +609,7 @@ class PMETApp(QWidget):
         extracted_sudocs = pd.read_csv('./extracted_data/extracted_data.csv')
         pending_queries = pd.concat([extracted_sudocs[extracted_sudocs['Error Code'] == "no records"],
                                      extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"],
-                                     extracted_sudocs[extracted_sudocs["SuDoc"].notna()]])
+                                     ])
         self.exceptions = pending_queries
    
         self.verification_window = WindowDesigner(self)
