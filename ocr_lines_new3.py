@@ -27,7 +27,7 @@ count = 0
 device = 'cpu'
 utils.logging.set_verbosity_error()
 
-keras_ocr.config.configure()
+#keras_ocr.config.configure()
 
 def ocr(image, processor, model):
     pixel_values = processor(image, return_tensors='pt').pixel_values.to(device)
@@ -102,7 +102,7 @@ def write_dataframe(data, label):
 
     data = merge_dicts(data)
 
-    output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year', 'File Name','Error Code','Query Status'])
+    output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year', 'Path','Error Code','Query Status'])
 
     idx = 0
 
@@ -194,14 +194,14 @@ def load_models():
 
     recognizer.compile()
 
-    #recognizer.model.load_weights('classifiers/curr_recognizer.h5')
-    recognizer.model.load_weights('MLModelsList/curr_recognizer.h5')
+    recognizer.model.load_weights('classifiers/curr_recognizer.h5')
+    #recognizer.model.load_weights('MLModelsList/curr_recognizer.h5')
 
     pipeline = keras_ocr.pipeline.Pipeline(detector=detector, recognizer=recognizer)
 
     print("Loading trocr models")
 
-    processor_typed = TrOCRProcessor.from_pretrained('./MLModelsList/ocr_models/typed_ocr_models')
+    '''processor_typed = TrOCRProcessor.from_pretrained('./MLModelsList/ocr_models/typed_ocr_models')
     model_typed = VisionEncoderDecoderModel.from_pretrained(
         './MLModelsList/ocr_models/typed_ocr_models'
     ).to(device)
@@ -210,17 +210,13 @@ def load_models():
     model_typed = VisionEncoderDecoderModel.from_pretrained(
         './ocr_models/typed_ocr_models'
     ).to(device)
-    '''
-    processor_hw = TrOCRProcessor.from_pretrained('./MLModelsList/ocr_models/hw_ocr_models')
-    model_hw = VisionEncoderDecoderModel.from_pretrained(
-        './MLModelsList/ocr_models/hw_ocr_models'
-    ).to(device)
-    '''
+    
+
     processor_hw = TrOCRProcessor.from_pretrained('./ocr_models/hw_ocr_models')
     model_hw = VisionEncoderDecoderModel.from_pretrained(
         './ocr_models/hw_ocr_models'
     ).to(device)
-    '''
+    
 
     print("Successfully Loaded Models")
     
