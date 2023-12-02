@@ -1,6 +1,5 @@
 # This file demos the functional area API Database Requests
-from oclc_api import OCLCSession
-import json
+from oclc.oclc_api import OCLCSession
 
 
 def simple_demo():
@@ -8,7 +7,7 @@ def simple_demo():
     A simple live demo for CS 458 assignment.
     """
     # Creates new session with login credentials
-    oclc_session = OCLCSession("config.ini")
+    oclc_session = OCLCSession()
     print("OCLC Session created...\n")
 
     # Display token request

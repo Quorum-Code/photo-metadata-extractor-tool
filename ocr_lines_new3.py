@@ -126,7 +126,7 @@ def write_dataframe(data, label):
                 data[key] = data[key].replace(" ", "")
 
             output_data = pd.concat([output_data, pd.DataFrame([{'ID': idx, text_type: data[key], 'Publication Year': pub_year,
-                                    'File Name': key}],)], ignore_index=True)
+                                    'Path': key}],)], ignore_index=True)
             idx = idx + 1
 
     print(output_data)
