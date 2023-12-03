@@ -22,7 +22,7 @@ class OCLCSession:
         query_body      Body for a query.
     """
 
-    def __init__(self, config_file="config.ini"):
+    def __init__(self, config_file="config.ini", secrets_file=".secrets"):
         """
         Encapsulates all the functions and data required to connect to the OCLC API,
         query the API, and process the returned data.
@@ -30,10 +30,14 @@ class OCLCSession:
         :param config_file: The name of the config file in the program folder.
         """
 
+        # Files
+        self.config_file = config_file
+        self.secrets_file = secrets_file
+
         # Config settings
         self.config = configparser.ConfigParser()
         self.config.sections()
-        self.config.read(config_file)
+        self.config.read(self.config_file)
 
         # URLs
         self.token_url = self.config['URLS']['token_url']
@@ -82,10 +86,10 @@ class OCLCSession:
         """
 
         # Get credentials
-        secrets_file = self.config['Directories']['secrets']
+        # secrets_file = self.config['Directories']['secrets']
         secrets = configparser.ConfigParser()
         secrets.sections()
-        secrets.read(secrets_file)
+        secrets.read(self.secrets_file)
 
         client_id = secrets['SECRETS']['client_id']
         client_secret = secrets['SECRETS']['client_secret']
