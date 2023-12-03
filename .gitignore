@@ -1,3 +1,4 @@
 # Key file
 .secrets
 secrets
+__pycache__
