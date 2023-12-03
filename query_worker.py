@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from ocr_lines_new3 import read_data
 
+
 class QueryWorker(QThread):
     finished = pyqtSignal()
     result_ready = pyqtSignal(str)  # Define the signal here

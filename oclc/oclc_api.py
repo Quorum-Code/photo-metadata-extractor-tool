@@ -7,19 +7,26 @@ import configparser
 class OCLCSession:
     """
     Attributes:
-        config  The config file containing settings for the session.
+        token_url : str
+            The url for token requests.
+        auth_url : str
+            The url for authentication requests.
+        metadata_service_url : str
+            The url for queries.
 
-        token_url               The url for token requests.
-        auth_url                The url for authentication requests.
-        metadata_service_url    The url for queries.
+        signature : str
+            The encoded credentials.
+        token_headers : dict
+            Headers for an authentication request.
+        token_body : dict
+            Body for an authentication request.
+        token : str
+            Acquired authentication token.
 
-        signature       The encoded credentials.
-        token_headers   Headers for an authentication request.
-        token_body      Body for an authentication request.
-        token           Acquired authentication token.
-
-        query_headers   Headers for a query.
-        query_body      Body for a query.
+        query_headers : dict
+            Headers for a query.
+        query_body : dict
+            Body for a query.
     """
 
     def __init__(self, config_file="config.ini", secrets_file=".secrets"):
@@ -28,6 +35,8 @@ class OCLCSession:
         query the API, and process the returned data.
 
         :param config_file: The name of the config file in the program folder.
+
+        :param secrets_file: Optional path to secrets file containing credentials.
         """
 
         # Files
@@ -228,4 +237,3 @@ class OCLCSession:
 
 if __name__ == "__main__":
     oclcsession = OCLCSession("config.ini")
-
