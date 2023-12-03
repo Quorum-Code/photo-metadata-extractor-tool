@@ -9,6 +9,7 @@ from oclc_api import Query, OCLCSession
 import json
 import pandas as pd
 import os
+import datetime
 
 class WindowDesigner:
     def __init__(self, parent):
@@ -17,9 +18,12 @@ class WindowDesigner:
         self.path_value = None #initialize path_value as None
         self.path_message = None
         self.status_bar = None
-        self.image_label = None
+        self.sudoc_image_label = None
+        self.title_image_label = None
         self.path_warning = None
         self.image_warning = None
+        self.query_in_process = None
+        self.success_rate = None
         
 
     def create_login_window(self) -> None:
@@ -87,7 +91,7 @@ class WindowDesigner:
         self.homepage.selectButton.setGeometry(500, 200, 200, 50)
         self.homepage.selectButton.clicked.connect(self.parent.open_file)
         tool_instructions = QLabel("Select a file containing images of documents SuDoc's", parent=self.homepage)
-        tool_instructions.setGeometry(100,150,500,50)
+        tool_instructions.setGeometry(100,150,520,50)
 
         # Create a push button for begin OCLC query process
         self.homepage.beginquery = QPushButton('Begin Query', parent = self.homepage)
@@ -106,7 +110,7 @@ class WindowDesigner:
 
         # Toggle theme button 
         toggle_theme_button = QPushButton("Toggle Theme", parent=self.homepage)
-        toggle_theme_button.setGeometry(650, 100, 200, 50)
+        toggle_theme_button.setGeometry(680, 100, 200, 50)
         toggle_theme_button.clicked.connect(self.parent.toggle_style)
 
         self.homepage.show()  # Show the homepage window
@@ -121,50 +125,71 @@ class WindowDesigner:
         self.verification_window.verify.setGeometry(400, 800,200,50)
         self.verification_window.verify.clicked.connect(self.parent.update_exceptions)
 
-        self.image_label = None
+        self.sudoc_image_label = None
+        self.title_image_label = None
 
         self.verification_window.show()
         return self.verification_window
 
-    def update_verification_window(self, image_path, extracted_sudoc,extracted_title)->None:
+    def update_verification_window(self, image_path, sudoc_path, extracted_sudoc,extracted_title,extracted_year)->None:
         
-        if self.image_label is not None:
-            self.image_label.deleteLater()
+        if self.title_image_label is not None:
+            self.title_image_label.deleteLater()
+        if self.sudoc_image_label is not None:
+            self.sudoc_image_label.deleteLater()
             
-        self.image_label = QLabel(parent = self.verification_window)
-        pixmap = QPixmap(image_path)
+        self.title_image_label = QLabel(parent = self.verification_window)
+        self.sudoc_image_label = QLabel(parent = self.verification_window)
+        pixmap = QPixmap(str(image_path))
+        pixmap2 = QPixmap(str(sudoc_path))
 
-        aspect_ratio = pixmap.width() / pixmap.height()
+        if(pixmap.height() > 0):
+            aspect_ratio = pixmap.width() / pixmap.height()
 
-        max_width = 600
-        max_height = 600
-
-        new_width = min(max_width, pixmap.width())
-        new_height = min(max_height, pixmap.height())
+        new_width = 475
+        new_height = 475
 
         pixmap = pixmap.scaled(new_width,new_height, Qt.KeepAspectRatio)
-        self.image_label.setPixmap(pixmap)
+        self.title_image_label.setPixmap(pixmap)
+
+        if(pixmap2.height() > 0):
+            aspect_ratio = pixmap.width() / pixmap.height()
+        
+        pixmap2 = pixmap2.scaled(new_width,new_height, Qt.KeepAspectRatio)
+        self.sudoc_image_label.setPixmap(pixmap2)
 
         print("VERIFICATION IS CALLED")
         extracted_title = str(extracted_title)
         extracted_sudoc = str(extracted_sudoc)
+        extracted_year  = str(extracted_year)
 
         self.verification_window.sudoc_textbox = QLineEdit(extracted_sudoc, parent=self.verification_window)
         self.verification_window.sudoc_label = QLabel("SuDoc", parent=self.verification_window)
         self.verification_window.title_label = QLabel("Title", parent=self.verification_window)
+        self.verification_window.pub_label = QLabel("Publication Year", parent=self.verification_window)
+        self.verification_window.publication_year = QLineEdit(extracted_year, parent=self.verification_window)
     
         if len(extracted_title) > 200:
             extracted_title = extracted_title[::300]
         self.verification_window.title_textbox = QLineEdit(extracted_title, parent=self.verification_window)
 
-        self.verification_window.sudoc_label.setGeometry(10, 710, 300, 50)
-        self.verification_window.title_label.setGeometry(450, 710, 300, 50)
+        self.verification_window.title_label.setGeometry(10, 660, 300, 50)
+        self.verification_window.sudoc_label.setGeometry(350, 660, 300, 50)
+        self.verification_window.pub_label.setGeometry(10,750,300,50)
 
-        self.image_label.setGeometry(10, 10, pixmap.width(), pixmap.height())
-        self.verification_window.sudoc_textbox.setGeometry(10, 760, 300, 30)
-        self.verification_window.title_textbox.setGeometry(350, 760, 400, 30)
+        box_width = max(pixmap.width(),pixmap2.width())
+        box_height = max(pixmap.height(),pixmap2.height())
 
-        self.image_label.show()
+        self.sudoc_image_label.setGeometry(10, 10, box_width, box_height)
+        self.title_image_label.setGeometry(470,10, box_width, box_height)
+        self.verification_window.sudoc_textbox.setGeometry(10, 710, 300, 30)
+        self.verification_window.title_textbox.setGeometry(350, 710, 400, 30)
+        self.verification_window.publication_year.setGeometry(10,800,300,30)
+
+        self.title_image_label.show()
+        self.sudoc_image_label.show()
+        self.verification_window.pub_label.show()
+        self.verification_window.publication_year.show()
         self.verification_window.sudoc_textbox.show()
         self.verification_window.title_textbox.show()
         self.verification_window.sudoc_label.show()
@@ -192,7 +217,7 @@ class WindowDesigner:
         else:
             verifiedString = "Chosen File was: \n " +  directory_path
         self.path_value = QLabel(verifiedString, parent=window.homepage)
-        self.path_value.setGeometry(20, 260, 850, 50)
+        self.path_value.setGeometry(20, 260, 850, 60)
         if self.path_message:
             self.path_message.deleteLater()
         self.path_value.show()
@@ -263,7 +288,7 @@ class WindowDesigner:
         #if self.preview:
            # self.preview.deleteLater()
         self.preview = QLabel(string, parent=window.homepage)
-        self.preview.setGeometry(100,400,200,250)
+        self.preview.setGeometry(100,460,180,150)
         self.preview.show()
         window.homepage.update()
 
@@ -315,10 +340,22 @@ class WindowDesigner:
     """
 
     def querySuccessRate(self, window, found, total) -> None:
-        self.results = QLabel(str(found) + " of " + str(total) + " found.", parent=self.homepage)
-        self.results.setGeometry(500, 650, 150, 50)
-        self.results.show()
-        window.homepage.update()
+        if not self.success_rate:
+            self.success_rate = QLabel(str(found) + " of " + str(total) + " found.", parent=window.homepage)
+            self.success_rate.setGeometry(510, 600, 150, 50)
+            self.success_rate.show()
+            window.homepage.update()
+            QApplication.processEvents()
+
+  
+
+    def query_success_rate_delete(self, window, callback) -> None:
+        if self.success_rate:
+            self.success_rate.deleteLater()
+            self.success_rate = None
+            window.homepage.update()
+            QCoreApplication.processEvents()
+        callback()
 
     """
         process_images_first_warning:
@@ -328,7 +365,7 @@ class WindowDesigner:
     def process_images_first_warning(self,window) -> None:
         if not self.image_warning:
             self.image_warning = QLabel("Please process images first", parent=window.homepage)
-            self.image_warning.setGeometry(10,400,450,50)
+            self.image_warning.setGeometry(10,410,450,50)
             self.image_warning.show()
             window.homepage.update()
 
@@ -342,6 +379,28 @@ class WindowDesigner:
             self.image_warning.deleteLater()
             self.image_warning = None
             window.homepage.update()
+
+
+    def query_in_process_warning(self,window,callback) -> None:
+        if not self.query_in_process:
+            self.query_in_process = QLabel("Querying...Please Wait", parent=window.homepage)
+            self.query_in_process.setGeometry(510, 650, 250, 50)
+            self.query_in_process.show()
+            window.homepage.update()
+        QApplication.processEvents()
+        callback()
+
+
+    def query_in_process_warning_delete(self,window)->None:
+        if self.query_in_process:
+            self.query_in_process.deleteLater()
+            self.query_in_process = None
+            window.homepage.update()
+            
+
+    def update_window_events(self)->None:
+        QApplication.processEvents()
+
 
 
         
@@ -392,6 +451,7 @@ class PMETApp(QWidget):
         self.OCLC = None
         self.verification_window = None
         self.exceptions = None
+        self.query_in_process = False
 
 
     def run(self) -> None:
@@ -445,8 +505,8 @@ class PMETApp(QWidget):
 
     def grab_credentials(self) -> None:
         if not self.credentials_saved:
-            file = open(".secrets_temp","w")
-            string = "[SECRETS] \nclient_id= " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
+            file = open(".secrets(temp)","w")
+            string = "[SECRETS] \nclient_id = " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
             file.write(string)
             self.credentials_saved = True
             
@@ -532,20 +592,27 @@ class PMETApp(QWidget):
     """
 
     def begin_query(self) -> None:
+        self.designer.query_success_rate_delete(self.homepage,callback=self.display_query)
+
+    def display_query(self) ->None:
+        self.designer.query_in_process_warning(self.homepage, callback=self.process_query)
+   
+    def process_query(self):
         if not self.extracted_csv:
             print("ping user to process images first")
             self.designer.process_images_first_warning(self.homepage)
-        if self.credential:  ## SWITCH TO ELIF FOR FINAL VERSIOn
-            print("current credential")
+
+        if self.credential and not self.query_in_process:  ## SWITCH TO ELIF FOR FINAL VERSIOn
             self.extract_query_data()
-        else:
-            print("no current credential")  
+            self.query_in_process = True
+
+        elif not self.credential and not self.query_in_process: 
             self.OCLC = OCLCSession("config.ini") #create OCLCSession Instance
             token_response = self.authenticate_user() #Verify user login to the system
             if token_response == 200:
                 self.credentail = True
-                self.extract_query_data()   
-                print("credential successfully created")           
+                self.extract_query_data()
+                self.query_in_process = True          
             else:
                 print("create error function ping user to relogin")
             #add a function call for 
@@ -558,13 +625,13 @@ class PMETApp(QWidget):
     """
     def extract_query_data(self):
         extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
-        #extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
-        #print(extracted_sudocs)
+        extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
+
         count = 0
         for i in range(len(extracted_sudocs)):
             query_result = self.OCLC.query(extracted_sudocs.loc[i, "SuDoc"])
             query_result = json.loads(query_result)
-            print(query_result)
+            #print(query_result)
             if int(query_result["numberOfRecords"]) != 1:
                 if pd.isna(extracted_sudocs.loc[i, "Query Status"]):
                     extracted_sudocs.loc[i, "Query Status"] = 1  
@@ -600,12 +667,13 @@ class PMETApp(QWidget):
     def verify_extracted_data(self):
         extracted_sudocs = pd.read_csv('./extracted_data/extracted_data.csv')
         pending_queries = pd.concat([extracted_sudocs[extracted_sudocs['Error Code'] == "no records"],
-                                     extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"]])
+                                     extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"],
+                                     ])
         self.exceptions = pending_queries
    
         self.verification_window = WindowDesigner(self)
         self.verification_window = self.designer.create_verification_window()
-        self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'])   
+        self.designer.update_verification_window(self.exceptions.iloc[0]['Sudoc Image'],self.exceptions.iloc[0]['Title Image'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'], self.exceptions.iloc[0]['Publication Year'])   
 
         self.homepage.query_finished(self.homepage)
         self.homepage.preview(self.homepage)
@@ -624,9 +692,12 @@ class PMETApp(QWidget):
     
         sudoc = self.verification_window.sudoc_textbox.text()
         title = self.verification_window.title_textbox.text()
+        year  = self.verification_window.publication_year.text()
 
         extracted_sudocs.loc[identifier,'SuDoc'] = sudoc
         extracted_sudocs.loc[identifier, 'Title'] = title
+        extracted_sudocs.loc[identifier, 'Publication Year'] = year
+
         
         extracted_sudocs.reset_index(drop=True, inplace=True)
         extracted_sudocs.to_csv("extracted_data/extracted_data.csv", index=False)
@@ -642,7 +713,7 @@ class PMETApp(QWidget):
         if len(self.exceptions) > 1:
             self.next_instance()
             self.exceptions = self.exceptions.drop(self.exceptions.index[0])
-            self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'])
+            self.designer.update_verification_window(self.exceptions.iloc[0]['Sudoc Image'],self.exceptions.iloc[0]['Title Image'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'],self.exceptions.iloc[0]['Publication Year'])
         else:
             self.next_instance()
             self.exceptions = self.exceptions.drop(self.exceptions.index[0])
@@ -664,7 +735,7 @@ class PMETApp(QWidget):
         for i in range(len(pending_queries)):
             query_result = self.OCLC.query(pending_queries.iloc[i]["SuDoc"])
             query_result = json.loads(query_result)
-            print(query_result)
+            #print(query_result)
             if int(query_result["numberOfRecords"]) != 1:
                 if pd.isna(pending_queries.iloc[i]["Query Status"]):
                     pending_queries.iloc[i]["Query Status"] = 1  
@@ -699,7 +770,10 @@ class PMETApp(QWidget):
             extracted_sudocs.loc[i, 'Publication Year'] = outliers.loc[i,'Publication Year']
         count = len(extracted_sudocs[extracted_sudocs["Error Code"] == "Data Collected"])
         total = len(extracted_sudocs)
-        self.homepage.querySuccessRate(self.homepage,count,total)
+        self.designer.query_in_process_warning_delete(self.homepage)
+        self.designer.querySuccessRate(self.homepage,count,total)
+        self.query_in_process = False
+                         
     
     """
         preview_csv:
@@ -720,8 +794,11 @@ class PMETApp(QWidget):
     """
 
     def download_csv(self)->None:
+        time = datetime.datetime.now()
+        time = time.strftime('%Y-%m-%d %H-%M-%S')[:-3]
         extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
-        extracted_data.to_csv("~/Downloads/resulting_data.csv", index=False)
+        extracted_data = extracted_data[["ID", "Title", "SuDoc", "Publication Year"]]
+        extracted_data.to_csv("~/Downloads/resulting_data_" + time + ".csv", index=False)
 
     """
         new_query: 
