@@ -5,22 +5,22 @@ from PyQt5.QtGui import *
 import qdarkstyle
 from ocr_lines_new3 import read_data
 from query_worker import QueryWorker
-from oclc_api import Query, OCLCSession
+from oclc.oclc_api import *
 import json
 import pandas as pd
 import os
+
 
 class WindowDesigner:
     def __init__(self, parent):
         self.parent = parent
         self.style_flag = False
-        self.path_value = None #initialize path_value as None
+        self.path_value = None
         self.path_message = None
         self.status_bar = None
         self.image_label = None
         self.path_warning = None
         self.image_warning = None
-        
 
     def create_login_window(self) -> None:
         parent = self.parent
@@ -48,14 +48,14 @@ class WindowDesigner:
         parent.loginPassword = QLineEdit("abc123", parent=parent)
         loginUsernameLabel = QLabel("Username", parent=parent)
         loginPasswordLabel = QLabel("Password", parent=parent)
-        loginPasswordLabel.setGeometry(200, 310,300,50)
+        loginPasswordLabel.setGeometry(200, 310, 300, 50)
         parent.loginUsername.move(200, 250)
-        loginUsernameLabel.setGeometry(200, 210,300,50)
+        loginUsernameLabel.setGeometry(200, 210, 300, 50)
         parent.loginPassword.move(200, 350)
 
         # Create an option for the user to exit
         parent.exitButton = QPushButton("Exit", parent=parent)
-        parent.exitButton.setGeometry(560, 400, 100,50)
+        parent.exitButton.setGeometry(560, 400, 100, 50)
         parent.exitButton.clicked.connect(parent.close_window)
 
         toggle_style_button = QPushButton("Toggle Style", parent=parent)
@@ -96,12 +96,12 @@ class WindowDesigner:
 
         # Create an exit button to close window
         self.homepage.exitButton = QPushButton("Exit", parent=self.homepage)
-        self.homepage.exitButton.setGeometry(680, 800,200,50)
+        self.homepage.exitButton.setGeometry(680, 800, 200, 50)
         self.homepage.exitButton.clicked.connect(self.parent.close_homepage)
 
         # Create a button to begin image proccesing 
         self.homepage.selectButton = QPushButton('Process Images', parent=self.homepage)
-        self.homepage.selectButton.setGeometry(500,340,200,50)
+        self.homepage.selectButton.setGeometry(500, 340, 200, 50)
         self.homepage.selectButton.clicked.connect(self.parent.begin_image_processing)
 
         # Toggle theme button 
@@ -118,7 +118,7 @@ class WindowDesigner:
         self.verification_window.setWindowIcon(QIcon("hsu_logo2.png"))
 
         self.verification_window.verify = QPushButton("Verify", parent=self.verification_window)
-        self.verification_window.verify.setGeometry(400, 800,200,50)
+        self.verification_window.verify.setGeometry(400, 800, 200, 50)
         self.verification_window.verify.clicked.connect(self.parent.update_exceptions)
 
         self.image_label = None
@@ -126,15 +126,16 @@ class WindowDesigner:
         self.verification_window.show()
         return self.verification_window
 
-    def update_verification_window(self, image_path, extracted_sudoc,extracted_title)->None:
+    def update_verification_window(self, image_path, extracted_sudoc,extracted_title,extracted_year)->None:
         
         if self.image_label is not None:
             self.image_label.deleteLater()
             
-        self.image_label = QLabel(parent = self.verification_window)
-        pixmap = QPixmap(image_path)
+        self.image_label = QLabel(parent=self.verification_window)
+        pixmap = QPixmap(str(image_path))
 
-        aspect_ratio = pixmap.width() / pixmap.height()
+        if pixmap.height() > 0:
+            aspect_ratio = pixmap.width() / pixmap.height()
 
         max_width = 600
         max_height = 600
@@ -148,23 +149,30 @@ class WindowDesigner:
         print("VERIFICATION IS CALLED")
         extracted_title = str(extracted_title)
         extracted_sudoc = str(extracted_sudoc)
+        extracted_year  = str(extracted_year)
 
         self.verification_window.sudoc_textbox = QLineEdit(extracted_sudoc, parent=self.verification_window)
         self.verification_window.sudoc_label = QLabel("SuDoc", parent=self.verification_window)
         self.verification_window.title_label = QLabel("Title", parent=self.verification_window)
+        self.verification_window.pub_label = QLabel("Publication Year", parent=self.verification_window)
+        self.verification_window.publication_year = QLineEdit(extracted_year, parent=self.verification_window)
     
         if len(extracted_title) > 200:
             extracted_title = extracted_title[::300]
         self.verification_window.title_textbox = QLineEdit(extracted_title, parent=self.verification_window)
 
-        self.verification_window.sudoc_label.setGeometry(10, 710, 300, 50)
-        self.verification_window.title_label.setGeometry(450, 710, 300, 50)
+        self.verification_window.sudoc_label.setGeometry(10, 660, 300, 50)
+        self.verification_window.title_label.setGeometry(350, 660, 300, 50)
+        self.verification_window.pub_label.setGeometry(10,750,300,50)
 
-        self.image_label.setGeometry(10, 10, pixmap.width(), pixmap.height())
-        self.verification_window.sudoc_textbox.setGeometry(10, 760, 300, 30)
-        self.verification_window.title_textbox.setGeometry(350, 760, 400, 30)
+        self.image_label.setGeometry(100, 10, pixmap.width(), pixmap.height())
+        self.verification_window.sudoc_textbox.setGeometry(10, 710, 300, 30)
+        self.verification_window.title_textbox.setGeometry(350, 710, 400, 30)
+        self.verification_window.publication_year.setGeometry(10, 800, 300, 30)
 
         self.image_label.show()
+        self.verification_window.pub_label.show()
+        self.verification_window.publication_year.show()
         self.verification_window.sudoc_textbox.show()
         self.verification_window.title_textbox.show()
         self.verification_window.sudoc_label.show()
@@ -172,7 +180,6 @@ class WindowDesigner:
 
         self.verification_window.update()
         self.verification_window.show()
-
 
     def close_window(self) -> None:
         self.parent.close()
@@ -188,9 +195,9 @@ class WindowDesigner:
             self.path_value.deleteLater()
             window.homepage.update()
         if len(directory_path) > 850 / 9:
-            verifiedString =  "Chosen File was: \n "+ "..." + directory_path[-int(850/12)::]
+            verifiedString = "Chosen File was: \n "+ "..." + directory_path[-int(850/12)::]
         else:
-            verifiedString = "Chosen File was: \n " +  directory_path
+            verifiedString = f"Chosen File was: \n {directory_path}"  # "Chosen File was: \n " + directory_path
         self.path_value = QLabel(verifiedString, parent=window.homepage)
         self.path_value.setGeometry(20, 260, 850, 50)
         if self.path_message:
@@ -202,7 +209,7 @@ class WindowDesigner:
         choose_path:
             Pings user in the case a process request is made before a direcotry is choosen
     """
-    def choose_path(self,window) -> None:
+    def choose_path(self, window) -> None:
         self.path_message = QLabel("Please pick a directory before begining Procesing", parent=window.homepage)
         self.path_message.setGeometry(200, 600, 850, 50)
         self.path_message.show()
@@ -214,10 +221,10 @@ class WindowDesigner:
             has been completed
     """
 
-    def single_query_warning(self,window) -> None:
+    def single_query_warning(self, window) -> None:
         if not self.path_warning:
             self.path_warning = QLabel("Please wait for the first query to finish", parent=window.homepage)
-            self.path_warning.setGeometry(10,700,450,50)
+            self.path_warning.setGeometry(10, 700, 450, 50)
             self.path_warning.show()
             window.homepage.update()
 
@@ -226,7 +233,7 @@ class WindowDesigner:
             removes the single_query_warning after image proccessing has been completed
     """
 
-    def single_query_warning_delete(self,window) -> None:
+    def single_query_warning_delete(self, window) -> None:
         if self.path_warning:
             self.path_warning.deleteLater()
             self.path_warning = None
@@ -249,7 +256,7 @@ class WindowDesigner:
     
     def create_progress_bar(self,window) -> None:
         self.status_bar = QProgressBar(parent=window.homepage) 
-        self.status_bar.setGeometry(200,400,400,20)
+        self.status_bar.setGeometry(200, 400, 400, 20)
         self.status_bar.show()
         window.homepage.update()
 
@@ -263,7 +270,7 @@ class WindowDesigner:
         #if self.preview:
            # self.preview.deleteLater()
         self.preview = QLabel(string, parent=window.homepage)
-        self.preview.setGeometry(100,400,200,250)
+        self.preview.setGeometry(100, 400, 200, 250)
         self.preview.show()
         window.homepage.update()
 
@@ -275,7 +282,7 @@ class WindowDesigner:
 
     def query_finished(self, window) -> None:
         self.downloadButton = QPushButton('Download Results', parent=self.homepage)
-        self.downloadButton.setGeometry(100,700,200,50)
+        self.downloadButton.setGeometry(100, 700, 200, 50)
         self.downloadButton.clicked.connect(self.parent.download_csv)
         self.downloadButton.show()
         window.homepage.update()
@@ -286,9 +293,9 @@ class WindowDesigner:
             within the dataframe after the query process
     """
     
-    def preview(self,window) -> None:
+    def preview(self, window) -> None:
         self.previewButton = QPushButton('Preview Results', parent=self.homepage)
-        self.previewButton.setGeometry(100,640,200,50)
+        self.previewButton.setGeometry(100, 640, 200, 50)
         self.previewButton.clicked.connect(self.parent.preview_csv)
         self.previewButton.show()
         window.homepage.update()
@@ -300,9 +307,9 @@ class WindowDesigner:
             the user to reinitialize the program and begin a new query.
     """
 
-    def toggleClose(self,window) -> None:
+    def toggleClose(self, window) -> None:
         self.closeButton = QPushButton('New Query', parent=self.homepage)
-        self.closeButton.setGeometry(100,760,200,50)
+        self.closeButton.setGeometry(100, 760, 200, 50)
         self.closeButton.clicked.connect(self.parent.new_query)
         self.closeButton.show()
         window.homepage.update()
@@ -325,10 +332,10 @@ class WindowDesigner:
             Warns the user to process users before instantiating a query
     """
 
-    def process_images_first_warning(self,window) -> None:
+    def process_images_first_warning(self, window) -> None:
         if not self.image_warning:
             self.image_warning = QLabel("Please process images first", parent=window.homepage)
-            self.image_warning.setGeometry(10,400,450,50)
+            self.image_warning.setGeometry(10, 410, 450, 50)
             self.image_warning.show()
             window.homepage.update()
 
@@ -337,7 +344,7 @@ class WindowDesigner:
             Updates window to delete warning message after user processes images
     """
    
-    def process_images_first_delete(self,window) -> None:
+    def process_images_first_delete(self, window) -> None:
         if self.image_warning:
             self.image_warning.deleteLater()
             self.image_warning = None
@@ -382,9 +389,9 @@ class PMETApp(QWidget):
         super().__init__()
         self.designer = WindowDesigner(self)
         self.designer.create_login_window()
-        self.homepage = None #Initialize homepage as None
-        self.directory_path= None
-        self.style_flag = False # added to track the flag state
+        self.homepage = None  #Initialize homepage as None
+        self.directory_path = None
+        self.style_flag = False  # added to track the flag state
         self.query_worker = None
         self.extracted_csv = None
         self.credential = False
@@ -393,25 +400,23 @@ class PMETApp(QWidget):
         self.verification_window = None
         self.exceptions = None
 
-
     def run(self) -> None:
         self.show()
         
     """
         open_home:
             Saves login credentials to .secrets and takes user to the programs main page
-    """   
-          
+    """
   
     def open_home(self) -> None:
         self.grab_credentials()
-        self.OCLC = OCLCSession("config.ini") #create OCLCSession Instance
-        token_response = self.authenticate_user() #Verify user login to the system
+        self.OCLC = OCLCSession("config.ini")  #create OCLCSession Instance
+        token_response = self.authenticate_user()  #Verify user login to the system
         if token_response == 200:
             self.credentail = True
             self.designer.parent.close()
             self.homepage = WindowDesigner(self) 
-            self.homepage.create_homepage_window() # Store the homepage reference
+            self.homepage.create_homepage_window()  # Store the homepage reference
 
 
     def close_window(self) -> None:
@@ -445,8 +450,9 @@ class PMETApp(QWidget):
 
     def grab_credentials(self) -> None:
         if not self.credentials_saved:
-            file = open(".secrets_temp","w")
-            string = "[SECRETS] \nclient_id= " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
+            file = open(".secrets_temp", "w")
+            string = "[SECRETS] \nclient_id= " \
+                     + self.loginUsername.text() + "\nclient_secret = " + self.loginPassword.text()
             file.write(string)
             self.credentials_saved = True
             
@@ -516,7 +522,7 @@ class PMETApp(QWidget):
             Sets the attribute to the extracted text
     """
 
-    def handle_result(self,result) -> None:
+    def handle_result(self, result) -> None:
         print("Query Result:", result)
         self.extracted_csv = result
     
@@ -535,20 +541,20 @@ class PMETApp(QWidget):
         if not self.extracted_csv:
             print("ping user to process images first")
             self.designer.process_images_first_warning(self.homepage)
-        if self.credential:  ## SWITCH TO ELIF FOR FINAL VERSIOn
+        if self.credential:  # SWITCH TO ELIF FOR FINAL VERSIOn
             print("current credential")
             self.extract_query_data()
         else:
             print("no current credential")  
-            self.OCLC = OCLCSession("config.ini") #create OCLCSession Instance
-            token_response = self.authenticate_user() #Verify user login to the system
+            self.OCLC = OCLCSession("config.ini")  #create OCLCSession Instance
+            token_response = self.authenticate_user()  #Verify user login to the system
             if token_response == 200:
                 self.credentail = True
                 self.extract_query_data()   
                 print("credential successfully created")           
             else:
                 print("create error function ping user to relogin")
-            #add a function call for 
+            # add a function call for
     """
         extract_query_data:
             Pulls processed SuDocs from extracted csv files and sends
@@ -558,8 +564,8 @@ class PMETApp(QWidget):
     """
     def extract_query_data(self):
         extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
-        #extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
-        #print(extracted_sudocs)
+        extracted_sudocs = extracted_sudocs[extracted_sudocs["SuDoc"].notna()]
+        # print(extracted_sudocs)
         count = 0
         for i in range(len(extracted_sudocs)):
             query_result = self.OCLC.query(extracted_sudocs.loc[i, "SuDoc"])
@@ -600,12 +606,13 @@ class PMETApp(QWidget):
     def verify_extracted_data(self):
         extracted_sudocs = pd.read_csv('./extracted_data/extracted_data.csv')
         pending_queries = pd.concat([extracted_sudocs[extracted_sudocs['Error Code'] == "no records"],
-                                     extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"]])
+                                     extracted_sudocs[extracted_sudocs['Error Code'] == "multiple records"],
+                                     ])
         self.exceptions = pending_queries
    
         self.verification_window = WindowDesigner(self)
         self.verification_window = self.designer.create_verification_window()
-        self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'])   
+        self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'], self.exceptions.iloc[0]['Publication Year'])   
 
         self.homepage.query_finished(self.homepage)
         self.homepage.preview(self.homepage)
@@ -624,10 +631,12 @@ class PMETApp(QWidget):
     
         sudoc = self.verification_window.sudoc_textbox.text()
         title = self.verification_window.title_textbox.text()
+        year  = self.verification_window.publication_year.text()
 
         extracted_sudocs.loc[identifier,'SuDoc'] = sudoc
         extracted_sudocs.loc[identifier, 'Title'] = title
-        
+        extracted_sudocs.loc[identifier, 'Publication Year'] = year
+
         extracted_sudocs.reset_index(drop=True, inplace=True)
         extracted_sudocs.to_csv("extracted_data/extracted_data.csv", index=False)
 
@@ -638,11 +647,14 @@ class PMETApp(QWidget):
             the verification window for the next verification instance
     """
 
-    def update_exceptions(self)  -> None:
+    def update_exceptions(self) -> None:
         if len(self.exceptions) > 1:
             self.next_instance()
             self.exceptions = self.exceptions.drop(self.exceptions.index[0])
-            self.designer.update_verification_window(self.exceptions.iloc[0]['Path'], self.exceptions.iloc[0]['SuDoc'], self.exceptions.iloc[0]['Title'])
+            self.designer.update_verification_window(self.exceptions.iloc[0]['Path'],
+                                                     self.exceptions.iloc[0]['SuDoc'],
+                                                     self.exceptions.iloc[0]['Title'],
+                                                     self.exceptions.iloc[0]['Publication Year'])
         else:
             self.next_instance()
             self.exceptions = self.exceptions.drop(self.exceptions.index[0])
@@ -655,7 +667,6 @@ class PMETApp(QWidget):
         query_sudoc:
             Instantiates the query process on the pending_quires dataframe
     """
-
 
     def query_sudoc(self) -> pd.DataFrame():
         extracted_sudocs = pd.read_csv("./extracted_data/extracted_data.csv")
@@ -708,7 +719,7 @@ class PMETApp(QWidget):
     
     """
 
-    def preview_csv(self)->None:
+    def preview_csv(self) -> None:
         extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
         preview = extracted_data["Error Code"].head().to_string()
         self.homepage.preview_results(self.homepage, preview)
@@ -719,8 +730,9 @@ class PMETApp(QWidget):
             downloads folder
     """
 
-    def download_csv(self)->None:
+    def download_csv(self) -> None:
         extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
+        extracted_data = extracted_data[["ID", "Title", "SuDoc", "Publication Year"]]
         extracted_data.to_csv("~/Downloads/resulting_data.csv", index=False)
 
     """
@@ -733,7 +745,7 @@ class PMETApp(QWidget):
 
     def new_query(self) -> None:
         print("Function was called")
-        #os.remove("./extracted_data/extracted_data.csv") UNCOMMENT IN FINAL VERSION!
+        # os.remove("./extracted_data/extracted_data.csv") UNCOMMENT IN FINAL VERSION!
         self.homepage.parent.close()
         self.homepage = None
         self.designer = WindowDesigner(self)
@@ -748,7 +760,7 @@ class PMETApp(QWidget):
         self.credential = False
         self.credentials_saved = False
         self.OCLC = None
-        #Reset entire system and all flag variables to reinstantiate the window
+        # Reset entire system and all flag variables to reinstantiate the window
         
 
 if __name__ == '__main__':
