@@ -158,7 +158,7 @@ def write_dataframe(data, label):
             sudoc_key = key
             pub_year = pub_year_extraction(data[key])
         if (idx % 2) == 1:
-            output_data = pd.concat([output_data, pd.DataFrame([{'ID': idx-1, text_type_1_key: text_type_1_val, text_type_2_key: text_type_2_val,
+            output_data = pd.concat([output_data, pd.DataFrame([{'ID': (idx-1)/2, text_type_1_key: text_type_1_val, text_type_2_key: text_type_2_val,
                                     'Publication Year': pub_year, 'Sudoc Image': sudoc_key, 'Title Image': title_key}])], ignore_index=True)
             title_key = sudoc_key = text_type_1_val = text_type_2_val = pub_year = ""
     #print(output_data)
