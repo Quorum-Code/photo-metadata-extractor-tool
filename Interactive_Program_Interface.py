@@ -3,9 +3,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import qdarkstyle
-from ocr_lines_new3 import read_data
+from ocr_lines import read_data
 from query_worker import QueryWorker
-from oclc_api import Query, OCLCSession
+from oclc_api import  OCLCSession
 import json
 import pandas as pd
 import os
@@ -508,7 +508,6 @@ class PMETApp(QWidget):
         self.exceptions = None
         self.query_in_process = False
 
-
     def run(self) -> None:
         """
         run:
@@ -530,7 +529,6 @@ class PMETApp(QWidget):
             self.homepage = WindowDesigner(self) 
             self.homepage.create_homepage_window() # Store the homepage reference
 
-
     def close_window(self) -> None:
         """
         close_window:
@@ -547,8 +545,6 @@ class PMETApp(QWidget):
         #os.remove("./extracted_data/extracted_data.csv") UNCOMMENT IN FINAL VERSION!
         self.homepage = None
 
-
-
     def authenticate_user(self) -> int():
         """
         authenticate_user:
@@ -563,8 +559,6 @@ class PMETApp(QWidget):
             QMessageBox.critical(self, "Error", "Please check your credentials")
             return 401  # Authentication failed 
         
-
-
     def grab_credentials(self) -> None:
         """
         grab_credentials: 
@@ -572,20 +566,17 @@ class PMETApp(QWidget):
             the .sercrets file for later proccessing
         """
         if not self.credentials_saved:
-            file = open(".secrets(temp)","w")
+            file = open(".secrets","w")
             string = "[SECRETS] \nclient_id = " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
             file.write(string)
             self.credentials_saved = True
-
-
-            
+       
     def keyPressEvent(self, event) -> None:
         """
         Defines a keypressEvent so users can loging by hitting "enter"
         """
         if event.key() == Qt.Key_Return:
             self.open_home()
-   
 
     def open_file(self) -> None:
         """
@@ -610,8 +601,6 @@ class PMETApp(QWidget):
         else:
             app.setStyleSheet('')
 
-
-
     def begin_image_processing(self) -> None:
         """
         begin_image_proccessing:
@@ -622,7 +611,7 @@ class PMETApp(QWidget):
         if self.query_worker is not None:
             print("A query is already in progress. Please wait for it to finish")
             self.designer.single_query_warning(self.homepage)
-        elif self.directory_path:
+        if self.directory_path:
             self.designer.create_progress_bar(self.homepage)
             self.query_worker = QueryWorker(self.directory_path)
             self.query_worker.finished.connect(self.query_finished)
@@ -635,8 +624,6 @@ class PMETApp(QWidget):
         else:
             self.designer.choose_path(self.homepage)
     
-
-
     def query_finished(self) -> None:
         """ 
         query_finished:
@@ -647,7 +634,6 @@ class PMETApp(QWidget):
         self.designer.single_query_warning_delete(self.homepage)
         self.designer.status_bar.setValue(100)
 
-
     def handle_result(self,result) -> None:
         """
         handle_result:
@@ -657,8 +643,6 @@ class PMETApp(QWidget):
         print("Query Result:", result)
         self.extracted_csv = result
     
-
-
     def begin_query(self) -> None:
         """
         begin_query:
@@ -689,12 +673,8 @@ class PMETApp(QWidget):
         if not self.extracted_csv:
             print("ping user to process images first")
             self.designer.process_images_first_warning(self.homepage)
-
-        if self.credential and not self.query_in_process:  ## SWITCH TO ELIF FOR FINAL VERSIOn
-            self.extract_query_data()
-            self.query_in_process = True
-
-        elif not self.credential and not self.query_in_process: 
+        
+        else:
             self.OCLC = OCLCSession("config.ini") #create OCLCSession Instance
             token_response = self.authenticate_user() #Verify user login to the system
             if token_response == 200:
@@ -771,7 +751,6 @@ class PMETApp(QWidget):
         self.homepage.preview(self.homepage)
         self.homepage.toggleClose(self.homepage)
 
-
     def next_instance(self):
         """ 
             next_instance:
@@ -797,8 +776,6 @@ class PMETApp(QWidget):
         extracted_sudocs.reset_index(drop=True, inplace=True)
         extracted_sudocs.to_csv("extracted_data/extracted_data.csv", index=False)
 
-
-
     def update_exceptions(self)  -> None:
         """
         update_exceptions:
@@ -818,9 +795,6 @@ class PMETApp(QWidget):
             requeried_result = self.query_sudoc()
             self.merge_pending_queries(requeried_result)
       
-
-
-
     def query_sudoc(self) -> pd.DataFrame():
         """
              query_sudoc:
@@ -848,8 +822,6 @@ class PMETApp(QWidget):
                 pending_queries.iloc[i]["Error Code"] = "Data Collected"
         return pending_queries
 
-
-
     def merge_pending_queries(self, outliers) -> None:
         """
         merge_pending_queries:
@@ -867,9 +839,6 @@ class PMETApp(QWidget):
         self.designer.querySuccessRate(self.homepage,count,total)
         self.query_in_process = False
                          
-    
-
-
     def preview_csv(self)->None:
         """
         preview_csv:
@@ -881,8 +850,6 @@ class PMETApp(QWidget):
         preview = extracted_data["Error Code"].head().to_string()
         self.homepage.preview_results(self.homepage, preview)
     
-
-
     def download_csv(self)->None:
         """
         download_csv: 
@@ -894,7 +861,6 @@ class PMETApp(QWidget):
         extracted_data = pd.read_csv("./extracted_data/extracted_data.csv")
         extracted_data = extracted_data[["ID", "Title", "SuDoc", "Publication Year"]]
         extracted_data.to_csv("~/Downloads/resulting_data_" + time + ".csv", index=False)
-
 
     def new_query(self) -> None:
         """
