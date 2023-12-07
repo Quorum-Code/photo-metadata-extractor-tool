@@ -5,7 +5,7 @@ from PyQt5.QtGui import *
 import qdarkstyle
 from ocr_lines import read_data
 from query_worker import QueryWorker
-from oclc.oclc_api import  OCLCSession
+from oclc.oclc_api import  *
 import json
 import pandas as pd
 import os
