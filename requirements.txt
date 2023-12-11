@@ -10,3 +10,4 @@ transformers~=4.33.1
 tensorflow~=2.12.0
 torch~=2.0.1
 scikit-learn==1.2.2
+scipy==1.10.1
