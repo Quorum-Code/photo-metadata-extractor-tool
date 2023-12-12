@@ -10,7 +10,9 @@ import keras_ocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 import pickle
 from concurrent.futures import ThreadPoolExecutor
+#from multiprocessing import cpu_count
 from gc import collect
+
 from scipy.ndimage import maximum_filter
 
 def warn(*args, **kwargs):
@@ -51,11 +53,11 @@ def ocr(image, processor, model):
     collect()
     return generated_text
 
-def distinguish_rows(lst, thresh=15):
+def distinguish_rows(lst, thresh=50):
     """
     Parses returned bounding boxes from objected detected function by rows
     :param lst: List of bounding boxes
-    :param thresh: Max number of boxes per row
+    :param thresh: Max distance between bounding boxes
     :return: Sublists containing the bounding boxes grouped by row
     """
 
@@ -66,6 +68,8 @@ def distinguish_rows(lst, thresh=15):
                 sublists.append(lst[i])
             sublists.append(lst[i+1])
         else:
+            if i == 0:
+                sublists.append(lst[i])
             yield sublists
             sublists = [lst[i+1]]
     yield sublists
@@ -96,7 +100,7 @@ def get_distance(preds):
                 'bottom_right_y': bottom_right_y,
                 'dist_from_origin': dist_from_origin,
                 'distance_y': distance_y})
-            idx = idx +1
+            idx = idx + 1
     return detections
 
 def pub_year_extraction(data):
@@ -155,8 +159,8 @@ def write_dataframe(data, label):
             title_key = key
         elif text_type == 'sudoc':
             text_type_2_key = 'SuDoc'
-            text_type_2_val = data[key]
             data[key] = data[key].replace(" ", "")
+            text_type_2_val = data[key]
             sudoc_key = key
             pub_year = pub_year_extraction(data[key])
         if (idx % 2) == 1:
@@ -169,13 +173,14 @@ def write_dataframe(data, label):
     return datapath
 
 def text_classification(img, classifier):
-     """
-     Function to classify text within an image as handwritten or typed
+    """
+    Function to classify text within an image as handwritten or typed
 
-     :param img: Image with text
-     :param classifier: Model to classify image
-     :return: Label from resulting classification
-     """
+    :param img: Image with text
+    :param classifier: Model to classify image
+    :return: Label from resulting classification
+    """
+
     img_num = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     th, th_img = cv2.threshold(img_num, 0,255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     img_height, img_width = np.array(img_num).shape
@@ -275,16 +280,14 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
     print("Beggining extraction  on image: ", img_path)
     while img_read_flag == False:
         pass
-    img_read_flag=False
+    img_read_flag = False
     img = keras_ocr.tools.read(img_path)
     pred = pipeline.recognize([img])
-    img_read_flag=True
+    img_read_flag = True
     del pipeline
     collect()
-
     pred = get_distance(pred)
     pred = list(distinguish_rows(pred))
-    pred = list(filter(lambda x:x!=[], pred))
     for row in pred:
         row = sorted(row, key=lambda x:x['dist_from_origin'])
         for box in row:
@@ -298,15 +301,12 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
                 uby = lby - (uby - lby + 1)
             cropped_img = img[uby:lby, ubx:lbx]
             label = text_classification(cropped_img, writing_classifier)
-            #print(label)
-            #if label in [ 'Printed_extended', 'Other_extended' ]:
             if label == 'typed':
                 ext_txt = ext_txt + " " + ocr(
                     cropped_img,
                     processor=processor_typed,
                     model=model_typed
                 )
-            #elif label in [ 'Handwritten_extended', 'Mixed_extended' ]:
             elif label == 'handwritten':
                 ext_txt = ext_txt + " " + ocr(
                     cropped_img,
@@ -314,10 +314,10 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
                     model=model_hw
                 )
             ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
+            ext_txt = ' '.join(ext_txt.split())
             del cropped_img
             collect()
-    #print(ext_txt)
-    extractions[img_path]= ext_txt
+    extractions[img_path] = ext_txt
     print("Completed extraction on image: ", img_path)
     count += 1
     progress_signal.emit(count/total_images)
@@ -334,44 +334,32 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     :param total_images: Number of total images
     :return: List with the extracted data
     """
+    
     start_time = time.time()
-
     processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline = load_models()
-
     load_time = time.time() - start_time
-
     time_file = open('ml_pipeline_timings.txt', 'a')
-
     time_file.write("Total images: " + str(len(img_dir)) + "\n")
-
     time_file.write("Model Loading Time: " + str(load_time) + "\n")
-
     extracted_data = []
-
     #num_workers = 2 # if cpu_count() > 5 else 1
-
     exe = ThreadPoolExecutor(2)
-
     start_time = time.time()
-
     collected_data = []
     halfpoint = False
     for idx in range(0, len(img_dir), 2):
         for worker in range(0, 2):
-            #extracted_data.append(exe.submit(img_recognition, img_dir[idx:idx+2], processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline, total_images, progress_signal))
             collected_data.append(exe.submit(img_recognition, img_dir[(idx+worker)], processor_typed, model_typed, processor_hw, model_hw, writing_classifier,
                    pipeline, total_images, progress_signal))
 
         for obj in range(len(collected_data)):
             extracted_data.append(collected_data[obj].result())
         if (idx > int(len(img_dir)/2)) and halfpoint == False:
-            halfpoint == True
+            halfpoint = True
             write_dataframe(extracted_data, os.path.basename(os.path.normpath("extracted_data/temp_extracted_data.csv")))
         collected_data = []
     load_time = time.time() - start_time
-
     time_file.write("Total Extraction Time: " + str(load_time) + "\n")
-
     return extracted_data
 
 def dir_validation(dir):
@@ -386,15 +374,12 @@ def dir_validation(dir):
                              'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
                              'exr', 'hdr', 'pic'
                              ]
-
     if (len(dir) % 2) == 1:
         return 201
-
     for file in dir:
         ext = file.split(".")[-1]
         if ext not in supported_file_types:
             return 202
-
     return 200
 
 def read_data(path,progress_signal):
@@ -434,5 +419,3 @@ def read_data(path,progress_signal):
     print("finished image reading lines")
 
     return(datapath)
-
-#read_data()
