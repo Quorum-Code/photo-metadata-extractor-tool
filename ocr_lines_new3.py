@@ -139,8 +139,6 @@ def write_dataframe(data, label):
 
     print("Writing Out Data to CSV")
 
-    #change this to test each individual element in data
-
     label_classifier = pickle.load(open("classifiers/rf_model.sav", 'rb'))
     #label_classifier = pickle.load(open("MLModelsList/classifiers/rf_model.sav", 'rb'))
     curr_time = datetime.datetime.now()
@@ -160,6 +158,8 @@ def write_dataframe(data, label):
         elif text_type == 'sudoc':
             text_type_2_key = 'SuDoc'
             data[key] = data[key].replace(" ", "")
+            if data[key][:4].lower() == 'docs':
+                data[key] = data[key][4:]
             text_type_2_val = data[key]
             sudoc_key = key
             pub_year = pub_year_extraction(data[key])
@@ -334,7 +334,7 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     :param total_images: Number of total images
     :return: List with the extracted data
     """
-    
+
     start_time = time.time()
     processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline = load_models()
     load_time = time.time() - start_time
