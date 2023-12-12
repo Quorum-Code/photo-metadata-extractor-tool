@@ -157,12 +157,12 @@ def write_dataframe(data, label):
             title_key = key
         elif text_type == 'sudoc':
             text_type_2_key = 'SuDoc'
+            pub_year = pub_year_extraction(data[key])
             data[key] = data[key].replace(" ", "")
             if data[key][:4].lower() == 'docs':
                 data[key] = data[key][4:]
             text_type_2_val = data[key]
             sudoc_key = key
-            pub_year = pub_year_extraction(data[key])
         if (idx % 2) == 1:
             output_data = pd.concat([output_data, pd.DataFrame([{'ID': int((idx-1)/2), text_type_1_key: text_type_1_val, text_type_2_key: text_type_2_val,
                                     'Publication Year': pub_year, 'Sudoc Image': sudoc_key, 'Title Image': title_key}])], ignore_index=True)
