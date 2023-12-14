@@ -1,4 +1,9 @@
 # Key file
 .secrets
 secrets
+
+.idea
 __pycache__
+__pycache__/*
+oclc/__pycache__
+ocr_models
