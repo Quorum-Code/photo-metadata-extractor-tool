@@ -5,7 +5,7 @@ from PyQt5.QtGui import *
 import qdarkstyle
 from ocr_lines import read_data
 from query_worker import QueryWorker
-from oclc.oclc_api import *
+from oclc.oclc_api import  *
 import json
 import pandas as pd
 import os
@@ -523,6 +523,7 @@ class PMETApp(QWidget):
         self.grab_credentials()
         self.OCLC = OCLCSession("config.ini") #create OCLCSession Instance
         token_response = self.authenticate_user() #Verify user login to the system
+        print(token_response)
         if token_response == 200:
             self.credentail = True
             self.designer.parent.close()
@@ -545,11 +546,12 @@ class PMETApp(QWidget):
         #os.remove("./extracted_data/extracted_data.csv") UNCOMMENT IN FINAL VERSION!
         self.homepage = None
 
-    def authenticate_user(self) -> int():
+    def authenticate_user(self) -> int:
         """
         authenticate_user:
             Returns the login status code for collecting the API token
         """
+        print(self.OCLC.hasToken)
         if self.OCLC.hasToken:
             self.credential = True
             print("login success")
@@ -557,6 +559,7 @@ class PMETApp(QWidget):
         else:
             print("login failure")
             QMessageBox.critical(self, "Error", "Please check your credentials")
+            self.credentails_saved = False
             return 401  # Authentication failed 
         
     def grab_credentials(self) -> None:
@@ -565,11 +568,12 @@ class PMETApp(QWidget):
             Writes credential inputted at the login hompage into 
             the .sercrets file for later proccessing
         """
-        if not self.credentials_saved:
-            file = open(".secrets","w")
-            string = "[SECRETS] \nclient_id = " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
-            file.write(string)
-            self.credentials_saved = True
+        print(self.credentials_saved)
+        file = open(".secrets","w")
+        print(self.loginUsername.text(),self.loginPassword.text())
+        string = "[SECRETS] \nclient_id = " + self.loginUsername.text() + "\nclient_secret = " +  self.loginPassword.text()
+        file.write(string)
+        self.credentials_saved = True
        
     def keyPressEvent(self, event) -> None:
         """
@@ -611,7 +615,7 @@ class PMETApp(QWidget):
         if self.query_worker is not None:
             print("A query is already in progress. Please wait for it to finish")
             self.designer.single_query_warning(self.homepage)
-        if self.directory_path:
+        elif self.directory_path:
             self.designer.create_progress_bar(self.homepage)
             self.query_worker = QueryWorker(self.directory_path)
             self.query_worker.finished.connect(self.query_finished)
@@ -670,6 +674,7 @@ class PMETApp(QWidget):
             Instnatiates a OCLC session and calls extract_query_data
         
         """
+        #self.extracted_csv = "./extracted_data/extracted_data.csv"
         if not self.extracted_csv:
             print("ping user to process images first")
             self.designer.process_images_first_warning(self.homepage)
