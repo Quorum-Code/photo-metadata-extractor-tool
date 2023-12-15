@@ -1,7 +1,7 @@
 # photo-metadata-extractor-tool
 > Tool to speed up data entry of documents using the SuDoc numbering scheme
 
-## Installing PMET
+## Installing PMET on Windows
 
 1. Install Python 3.10 or newer.
 2. Clone or download the repository.
