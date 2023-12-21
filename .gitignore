@@ -3,6 +3,7 @@
 secrets
 
 .idea
+.idea/*
 __pycache__
 __pycache__/*
 oclc/__pycache__
