@@ -1,19 +1,24 @@
 import customtkinter
-from customtkinter import CTkProgressBar, IntVar
 import time
 import threading
+import os
+from PIL import Image
+from customtkinter import filedialog
 
 
 def main():
     gui = GUI(False)
     return
 
+
 def login():
     print("Logged in!!")
+
 
 def start_long_process():
     proc = threading.Thread(target=long_process)
     proc.start()
+
 
 def long_process():
     progress = 0
@@ -21,6 +26,114 @@ def long_process():
         progress += .5
         print(f"Progress: {progress}")
         time.sleep(.5)
+
+
+class HomePage:
+    def __init__(self, parent):
+        self.__parent = parent
+        self.__file_character_limit = 30
+
+        self.__photo_folder = "no folder selected"
+        self.__sudoc_file = "no file selected"
+        self.__file_icon_local_path = "icons\\folder-icon.png"
+        # todo add error handling for no image found
+        self.__file_icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.__file_icon_local_path)
+        self.__file_icon = customtkinter.CTkImage(Image.open(self.__file_icon_path), size=(24, 24))
+
+        self.home_frame = customtkinter.CTkFrame(self.__parent, corner_radius=0, fg_color="transparent")
+        self.home_frame.grid_columnconfigure(0, weight=1)
+
+        self.home_text = customtkinter.CTkLabel(self.home_frame, text="Home Page",
+                                                font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.home_text.grid(row=0, column=0, padx=20, pady=20)
+
+        # Sub Home frame - Photo folder frame
+        self.photo_folder_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0)
+        self.photo_folder_frame.grid(row=1, column=0, padx=10, pady=10)
+
+        self.photo_folder_name = customtkinter.CTkLabel(self.photo_folder_frame, text="Photo Folder", width=80)
+        self.photo_folder_name.grid(row=0, column=0, padx=10, pady=10)
+
+        self.select_photo_folder_button = customtkinter.CTkButton(self.photo_folder_frame,
+                                                                  text="",
+                                                                  image=self.__file_icon,
+                                                                  height=10,
+                                                                  width=10,
+                                                                  border_spacing=0,
+                                                                  corner_radius=0,
+                                                                  fg_color="transparent",
+                                                                  command=self.ask_photo_folder)
+        self.select_photo_folder_button.grid(row=0, column=1, padx=10, pady=10)
+
+        self.photo_folder_name = customtkinter.CTkLabel(self.photo_folder_frame, text=self.__photo_folder, anchor="w",
+                                                        width=300)
+        self.photo_folder_name.grid(row=0, column=2, padx=10, pady=10)
+
+        # Process Subframe
+        self.process_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0, fg_color="transparent")
+        self.process_frame.grid(row=2, column=0, padx=10, pady=10)
+
+        # Progress text
+        self.progress_text = customtkinter.CTkLabel(self.process_frame, corner_radius=0, text="No Process Running")
+        self.progress_text.grid(row=0, column=0)
+
+        # Progress bar
+        self.progress_bar = customtkinter.CTkProgressBar(self.process_frame, width=300)
+        self.progress_bar.set(0)
+        self.progress_bar.grid(row=1, column=0, padx=10)
+
+        self.process_photo_button = customtkinter.CTkButton(self.process_frame, text="Process Photos")
+        self.process_photo_button.grid(row=2, column=0, padx=10, pady=20)
+
+        # Sub Home frame - SuDoc file frame
+        self.sudoc_file_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0)
+        self.sudoc_file_frame.grid(row=3, column=0, padx=10, pady=10)
+
+        self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text="SuDoc CSV", width=80)
+        self.sudoc_file_name.grid(row=0, column=0, padx=10, pady=10)
+
+        self.select_sudoc_file_button = customtkinter.CTkButton(self.sudoc_file_frame,
+                                                                text="",
+                                                                image=self.__file_icon,
+                                                                height=10,
+                                                                width=10,
+                                                                border_spacing=0,
+                                                                corner_radius=0,
+                                                                fg_color="transparent",
+                                                                command=parent.ask_sudoc_file)
+        self.select_sudoc_file_button.grid(row=0, column=1, padx=10, pady=10)
+
+        self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text=self.__sudoc_file, anchor="w",
+                                                      width=300)
+        self.sudoc_file_name.grid(row=0, column=2, padx=10, pady=10)
+
+    def ask_photo_folder(self):
+        foldername = filedialog.askdirectory()
+
+        self.photo_folder_name.configure(text=foldername)
+
+    def _trim_filename(self, filename: str) -> str:
+        new_filename = ""
+        if len(filename) > self.__file_character_limit:
+            trim_index = len(filename) - self.__file_character_limit
+            new_filename = "..."
+            new_filename += filename[trim_index:]
+        return new_filename
+
+
+class SettingsPage:
+    def __init__(self):
+        pass
+
+
+class ConfigurationPage:
+    def __init__(self):
+        pass
+
+
+class InfoPage:
+    def __init__(self):
+        pass
 
 
 class App(customtkinter.CTk):
@@ -47,40 +160,43 @@ class App(customtkinter.CTk):
                                                    border_spacing=10,
                                                    text="Home",
                                                    fg_color="transparent",
+                                                   text_color=("gray10", "gray90"),
                                                    anchor="w",
                                                    command=self.home_button_event)
         self.home_button.grid(row=0, column=0, sticky="ew")
 
         self.settings_button = customtkinter.CTkButton(self.navigation_frame,
-                                                   corner_radius=0,
-                                                   height=40,
-                                                   border_spacing=10,
-                                                   text="Settings",
-                                                   fg_color="transparent",
-                                                   anchor="w",
-                                                   command=self.settings_button_event)
+                                                       corner_radius=0,
+                                                       height=40,
+                                                       border_spacing=10,
+                                                       text="Settings",
+                                                       fg_color="transparent",
+                                                       text_color=("gray10", "gray90"),
+                                                       anchor="w",
+                                                       command=self.settings_button_event)
         self.settings_button.grid(row=1, column=0, sticky="ew")
 
         self.configuration_button = customtkinter.CTkButton(self.navigation_frame,
-                                                   corner_radius=0,
-                                                   height=40,
-                                                   border_spacing=10,
-                                                   text="Configuration",
-                                                   fg_color="transparent",
-                                                   anchor="w",
-                                                   command=self.configuration_button_event)
+                                                            corner_radius=0,
+                                                            height=40,
+                                                            border_spacing=10,
+                                                            text="Configuration",
+                                                            fg_color="transparent",
+                                                            text_color=("gray10", "gray90"),
+                                                            anchor="w",
+                                                            command=self.configuration_button_event)
         self.configuration_button.grid(row=2, column=0, sticky="ew")
 
         # Style menu
         self.style_menu = customtkinter.CTkOptionMenu(self.navigation_frame,
-                                                      values=["Light", "Dark", "System"])
+                                                      values=["Light", "Dark", "System"],
+                                                      command=self.change_style_event)
         self.style_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
         # Initialize Home frame
-        self.home_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
-        self.home_frame.grid_columnconfigure(0, weight=1)
-        self.home_text = customtkinter.CTkLabel(self.home_frame, text="Home page...")
-        self.home_text.grid(row=0, column=0, padx=20, pady=20)
+        self.home = HomePage(self)
+        self.process_folder = "None"
+        self.sudoc_file = "None"
 
         # Initialize Settings frame
         self.settings_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -96,6 +212,8 @@ class App(customtkinter.CTk):
         # Load home frame
         self.select_frame_by_name("home")
 
+        self.grab_set()
+
     def select_frame_by_name(self, name: str):
         # Update navigation button colors
         self.home_button.configure(fg_color=("gray75", "gray25") if name == "home" else "transparent")
@@ -103,18 +221,25 @@ class App(customtkinter.CTk):
         self.configuration_button.configure(fg_color=("gray75", "gray25") if name == "configuration" else "transparent")
 
         # Set or forget frames
-        if name == "home": self.home_frame.grid(row=0, column=1, sticky="nsew")
-        else: self.home_frame.grid_forget()
+        if name == "home":
+            self.home.home_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.home.home_frame.grid_forget()
 
-        if name == "settings": self.settings_frame.grid(row=0, column=1, sticky="nsew")
-        else: self.settings_frame.grid_forget()
+        if name == "settings":
+            self.settings_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.settings_frame.grid_forget()
 
-        if name == "configuration": self.configuration_frame.grid(row=0, column=1, sticky="nsew")
-        else: self.configuration_frame.grid_forget()
+        if name == "configuration":
+            self.configuration_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.configuration_frame.grid_forget()
 
-        if name == "info": self.configuration_frame.grid(row=0, column=1, sticky="nsew")
-        else: self.info_frame.grid_forget()
-
+        if name == "info":
+            self.configuration_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.info_frame.grid_forget()
 
     def home_button_event(self):
         self.select_frame_by_name("home")
@@ -128,12 +253,21 @@ class App(customtkinter.CTk):
     def info_button_event(self):
         self.select_frame_by_name("info")
 
+    def ask_sudoc_file(self):
+        self.home.sudoc_file_name.configure(text=filedialog.askopenfilename(filetypes=[("CSV", "*.csv")]))
+
+    def change_style_event(self, style: str):
+        customtkinter.set_appearance_mode(style)
+        # todo set a var in settings config to style
+
 
 class GUI:
     def __init__(self, light: bool = True):
         # Graphic Theme
-        if light: customtkinter.set_appearance_mode("light")
-        else: customtkinter.set_appearance_mode("dark")
+        if light:
+            customtkinter.set_appearance_mode("light")
+        else:
+            customtkinter.set_appearance_mode("dark")
 
         # Interactable color
         customtkinter.set_default_color_theme("blue")
@@ -183,6 +317,7 @@ class GUI:
     def increment_progress(self):
         self.progress += .1
         self.progressbar.set(self.progress)
+
 
 if __name__ == "__main__":
     app = App()
