@@ -5,6 +5,7 @@ requests~=2.31.0
 customtkinter~=5.2.1
 PyQt5~=5.15.10
 qdarkstyle~=3.2
+Pillow~=10.1.0
 
 # MLM
 numpy~=1.25.2

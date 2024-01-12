@@ -31,7 +31,7 @@ def long_process():
 class HomePage:
     def __init__(self, parent):
         self.__parent = parent
-        self.__file_character_limit = 30
+        self.__file_character_limit = 40
 
         self.__photo_folder = "no folder selected"
         self.__sudoc_file = "no file selected"
@@ -100,7 +100,7 @@ class HomePage:
                                                                 border_spacing=0,
                                                                 corner_radius=0,
                                                                 fg_color="transparent",
-                                                                command=parent.ask_sudoc_file)
+                                                                command=self.ask_sudoc_file)
         self.select_sudoc_file_button.grid(row=0, column=1, padx=10, pady=10)
 
         self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text=self.__sudoc_file, anchor="w",
@@ -108,22 +108,42 @@ class HomePage:
         self.sudoc_file_name.grid(row=0, column=2, padx=10, pady=10)
 
     def ask_photo_folder(self):
-        foldername = filedialog.askdirectory()
+        selected_folder = filedialog.askdirectory()
 
-        self.photo_folder_name.configure(text=foldername)
+        if selected_folder != "":
+            self.__photo_folder = selected_folder
+            self.photo_folder_name.configure(text=self._trim_filename(self.__photo_folder))
+
+    def ask_sudoc_file(self):
+        selected_file = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
+
+        if selected_file != "":
+            self.__sudoc_file = selected_file
+            self.sudoc_file_name.configure(text=self._trim_filename(self.__sudoc_file))
 
     def _trim_filename(self, filename: str) -> str:
-        new_filename = ""
         if len(filename) > self.__file_character_limit:
             trim_index = len(filename) - self.__file_character_limit
-            new_filename = "..."
-            new_filename += filename[trim_index:]
-        return new_filename
+            filename = f"...{filename[trim_index:]}"
+        return filename
 
 
 class SettingsPage:
-    def __init__(self):
-        pass
+    def __init__(self, parent):
+        self.__parent = parent
+
+        # Create settings frame
+        self.settings_frame = customtkinter.CTkFrame(self.__parent, corner_radius=0, fg_color="transparent")
+        self.settings_frame.grid_columnconfigure(0, weight=1)
+        self.home_text = customtkinter.CTkLabel(self.settings_frame, text="Settings Page",
+                                                font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.home_text.grid(row=0, column=0, padx=20, pady=20)
+
+        # Secret setter frame
+
+        # Process mode, sudoc, sudoc+cover, cover
+
+        # Search by sudoc, title
 
 
 class ConfigurationPage:
@@ -191,6 +211,9 @@ class App(customtkinter.CTk):
         self.style_menu = customtkinter.CTkOptionMenu(self.navigation_frame,
                                                       values=["Light", "Dark", "System"],
                                                       command=self.change_style_event)
+        # TODO change to defined setting in json
+        self.style_menu.set("System")
+        self.change_style_event("System")
         self.style_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
         # Initialize Home frame
@@ -199,9 +222,7 @@ class App(customtkinter.CTk):
         self.sudoc_file = "None"
 
         # Initialize Settings frame
-        self.settings_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
-        self.settings_text = customtkinter.CTkLabel(self.settings_frame, text="Settings page...")
-        self.settings_text.grid(row=0, column=0, padx=20, pady=20)
+        self.settings = SettingsPage(self)
 
         # Initialize Configuration frame
         self.configuration_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -227,9 +248,9 @@ class App(customtkinter.CTk):
             self.home.home_frame.grid_forget()
 
         if name == "settings":
-            self.settings_frame.grid(row=0, column=1, sticky="nsew")
+            self.settings.settings_frame.grid(row=0, column=1, sticky="nsew")
         else:
-            self.settings_frame.grid_forget()
+            self.settings.settings_frame.grid_forget()
 
         if name == "configuration":
             self.configuration_frame.grid(row=0, column=1, sticky="nsew")
@@ -252,9 +273,6 @@ class App(customtkinter.CTk):
 
     def info_button_event(self):
         self.select_frame_by_name("info")
-
-    def ask_sudoc_file(self):
-        self.home.sudoc_file_name.configure(text=filedialog.askopenfilename(filetypes=[("CSV", "*.csv")]))
 
     def change_style_event(self, style: str):
         customtkinter.set_appearance_mode(style)
