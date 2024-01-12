@@ -140,6 +140,36 @@ class SettingsPage:
         self.home_text.grid(row=0, column=0, padx=20, pady=20)
 
         # Secret setter frame
+        self.secret_setter_frame = customtkinter.CTkFrame(self.settings_frame, corner_radius=0, fg_color="transparent")
+        self.secret_setter_frame.grid(row=1, column=0, padx=20, pady=20)
+
+        self.client_textbox = customtkinter.CTkEntry(self.secret_setter_frame,
+                                                     width=350,
+                                                     placeholder_text="Client ID")
+        self.client_textbox.grid(row=0, column=0, padx=10, pady=10)
+
+        self.secret_textbox = customtkinter.CTkEntry(self.secret_setter_frame,
+                                                     show="*",
+                                                     width=350,
+                                                     placeholder_text="Client Secret")
+        self.secret_textbox.grid(row=1, column=0, padx=10, pady=10)
+
+        self.save_credentials = customtkinter.CTkButton(self.secret_setter_frame, text="Save")
+        self.save_credentials.grid(row=2, column=0, padx=10, pady=10)
+
+        # Default Style Frame
+        self.style_frame = customtkinter.CTkFrame(self.settings_frame, corner_radius=0, fg_color="transparent")
+        self.style_frame.grid(row=2, column=0, padx=10, pady=10)
+
+        self.default_style_label = customtkinter.CTkLabel(self.style_frame, text="Default Style")
+        self.default_style_label.grid(row=0, column=0, padx=10, pady=10)
+
+        # Todo set event to save default
+        self.default_style_dropdown = customtkinter.CTkOptionMenu(self.style_frame,
+                                                                  values=["Light", "Dark", "System"],
+                                                                  command=None)
+        self.default_style_dropdown.grid(row=0, column=1, padx=10, pady=10)
+        # Todo set it to the saved value
 
         # Process mode, sudoc, sudoc+cover, cover
 
@@ -240,6 +270,11 @@ class App(customtkinter.CTk):
         self.home_button.configure(fg_color=("gray75", "gray25") if name == "home" else "transparent")
         self.settings_button.configure(fg_color=("gray75", "gray25") if name == "settings" else "transparent")
         self.configuration_button.configure(fg_color=("gray75", "gray25") if name == "configuration" else "transparent")
+
+        # Clear focus
+        e = customtkinter.CTkEntry(self.navigation_frame)
+        self.update()
+        e.focus_force()
 
         # Set or forget frames
         if name == "home":
