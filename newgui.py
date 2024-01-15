@@ -4,11 +4,7 @@ import threading
 import os
 from PIL import Image
 from customtkinter import filedialog
-
-
-def main():
-    gui = GUI(False)
-    return
+import gui.application_window
 
 
 def login():
@@ -128,7 +124,7 @@ class HomePage:
         return filename
 
 
-class SettingsPage:
+"""class SettingsPage:
     def __init__(self, parent):
         self.__parent = parent
 
@@ -173,7 +169,7 @@ class SettingsPage:
 
         # Process mode, sudoc, sudoc+cover, cover
 
-        # Search by sudoc, title
+        # Search by sudoc, title"""
 
 
 class ConfigurationPage:
@@ -312,12 +308,12 @@ class App(customtkinter.CTk):
         self.style_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
         # Initialize Home frame
-        self.home = HomePage(self)
+        self.home = gui.guipages.HomePage(self)
         self.process_folder = "None"
         self.sudoc_file = "None"
 
         # Initialize Settings frame
-        self.settings = SettingsPage(self)
+        self.settings = gui.SettingsPage(self)
 
         # Initialize Configuration frame
         self.configuration = ConfigurationPage(self)
@@ -438,5 +434,5 @@ class GUI:
 
 
 if __name__ == "__main__":
-    app = App()
+    app = gui.application_window.App()
     app.mainloop()
