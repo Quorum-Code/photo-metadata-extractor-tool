@@ -7,7 +7,7 @@ from customtkinter import filedialog
 import gui.application_window
 
 
-def login():
+"""def login():
     print("Logged in!!")
 
 
@@ -124,7 +124,7 @@ class HomePage:
         return filename
 
 
-"""class SettingsPage:
+class SettingsPage:
     def __init__(self, parent):
         self.__parent = parent
 
@@ -169,7 +169,7 @@ class HomePage:
 
         # Process mode, sudoc, sudoc+cover, cover
 
-        # Search by sudoc, title"""
+        # Search by sudoc, title
 
 
 class ConfigurationPage:
@@ -430,7 +430,7 @@ class GUI:
 
     def increment_progress(self):
         self.progress += .1
-        self.progressbar.set(self.progress)
+        self.progressbar.set(self.progress)"""
 
 
 if __name__ == "__main__":

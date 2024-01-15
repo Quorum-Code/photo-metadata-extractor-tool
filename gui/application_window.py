@@ -88,9 +88,7 @@ class App(customtkinter.CTk):
         self.configuration_button.configure(fg_color=("gray75", "gray25") if name == "configuration" else "transparent")
 
         # Clear focus
-        e = customtkinter.CTkEntry(self.navigation_frame)
-        self.update()
-        e.focus_force()
+        self.focus()
 
         # Set or forget frames
         if name == "home":
