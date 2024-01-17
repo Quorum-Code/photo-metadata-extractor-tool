@@ -1,6 +1,4 @@
-from Interactive_Program_Interface import *
+import pmet
 
-app = QApplication([])  # Create the QApplication instance
-pmet_app = PMETApp()
-pmet_app.run()
-sys.exit(app.exec())  # Start the event loop with app.exec()
+if __name__ == "__main__":
+    pmet.main()

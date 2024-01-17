@@ -1,7 +1,9 @@
 import customtkinter
 import os
+from PyQt5.QtCore import QThread, pyqtSignal
 from PIL import Image
 from customtkinter import filedialog
+import ocr_lines
 
 
 class HomePage:
@@ -102,3 +104,19 @@ class HomePage:
             trim_index = len(filename) - self.__file_character_limit
             filename = f"...{filename[trim_index:]}"
         return filename
+
+
+class OCRHanlder(QThread):
+    # is_finished = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+
+        # may need to be converted to class variables
+        self.is_finished = pyqtSignal()
+        self.progress_percent = pyqtSignal(float)
+        # needs pyqT Signals
+        return
+
+    def extract(self, directory: str):
+        return ocr_lines.read_data(directory, self.progress_percent)

@@ -1,10 +1,12 @@
 import customtkinter
 import gui.home_page, gui.settings_page, gui.config_page
+from file_handler import FileHandler
 
 
 class App(customtkinter.CTk):
-    def __init__(self):
+    def __init__(self, filehandler: FileHandler):
         super().__init__()
+        self.filehandler = filehandler
 
         # Window settings
         self.title("Photo Metadata Extractor Tool")
