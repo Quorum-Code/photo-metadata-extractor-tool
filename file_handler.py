@@ -2,6 +2,7 @@ import configparser
 import json
 import os
 import codecs
+import copy
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
@@ -64,6 +65,15 @@ class FileHandler:
         # Load data as dict
         self.__json_data: dict = self.__load_json()
 
+        # Load secrets as dict
+        self.__secrets: dict = self.__load_secrets()
+
+        print(f"json: {self.__json_data}")
+        print(f"secrets: {self.__secrets}")
+
+    def test_print(self, text):
+        print(f"File handler function called with: {text}")
+
     def load_settings(self):
         try:
             with self.pmet_setting_file_path.open("r", encoding="utf-8") as f:
@@ -101,10 +111,13 @@ class FileHandler:
         self.__save_json()
 
     def get_settings(self) -> dict:
-        return self.__json_data["settings"]
+        return copy.deepcopy(self.__json_data["settings"])
 
-    def get_setting(self) -> str:
-        pass
+    def get_setting(self, key: str) -> str:
+        if key in self.__json_data:
+            return self.__json_data[key]
+        else:
+            return ""
 
     def get_configuration(self) -> dict:
         return self.__json_data["configuration"]
@@ -140,6 +153,7 @@ class FileHandler:
         if not self.pmet_secrets_file_path.exists():
             try:
                 with self.pmet_secrets_file_path.open("wb") as f:
+                    # todo: figure out why this is highlighted, optional param?
                     f.write(codecs.encode(bytes(f"{DEFAULT_SECRETS}", "utf-8"), "hex"))
             except FileNotFoundError:
                 return False
@@ -170,8 +184,9 @@ class FileHandler:
         return json_data
 
     def __restore_default_data(self):
-        print("RESTORING JSON DATA")
         json_data = DEFAULT_DATA
+
+        # todo: archive old data before overwriting... i.e save as pmet-data-1-17-2024.json
 
         with open(self.pmet_setting_file_path, "w") as f:
             f.write(json.dumps(json_data, indent=self.__indent))
@@ -181,6 +196,19 @@ class FileHandler:
     def __save_json(self):
         with open(self.pmet_setting_file_path, "w") as f:
             f.write(json.dumps(self.__json_data, indent=self.__indent))
+
+    def __save_secrets(self, client_id, client_secret):
+        new_secrets = {"client_id": client_id, "client_secret": client_secret}
+
+        with open(self.pmet_secrets_file_path, "wb") as f:
+            f.write(codecs.encode(bytes(f"{new_secrets}", "utf-8"), "hex"))
+        return
+
+    def __load_secrets(self) -> dict:
+        with open(self.pmet_secrets_file_path, "rb") as f:
+            text = f"{codecs.decode(f.read(), 'hex').decode()}"
+            text = text.replace('\'', '\"')
+            return json.loads(text)
 
 
 def main():

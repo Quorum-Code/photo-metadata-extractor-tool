@@ -1,9 +1,11 @@
 import customtkinter
+import file_handler
 
 
 class SettingsPage:
-    def __init__(self, parent):
+    def __init__(self, parent, filehandler: file_handler.FileHandler):
         self.__parent = parent
+        self.__filehandler = filehandler
 
         # Create settings frame
         self.settings_frame = customtkinter.CTkFrame(self.__parent, corner_radius=0, fg_color="transparent")
@@ -27,7 +29,9 @@ class SettingsPage:
                                                      placeholder_text="Client Secret")
         self.secret_textbox.grid(row=1, column=0, padx=10, pady=10)
 
-        self.save_credentials = customtkinter.CTkButton(self.secret_setter_frame, text="Save")
+        self.save_credentials = customtkinter.CTkButton(self.secret_setter_frame,
+                                                        text="Save",
+                                                        command=self.__save_secrets_event)
         self.save_credentials.grid(row=2, column=0, padx=10, pady=10)
 
         # Default Style Frame
@@ -47,3 +51,12 @@ class SettingsPage:
         # Process mode, sudoc, sudoc+cover, cover
 
         # Search by sudoc, title
+
+    def __save_secrets_event(self):
+        # get client id
+        # get client secret
+        # pass to filehandler
+
+        print(f"client_id: {self.client_textbox.get()} client_secret: {self.secret_textbox.get()}")
+        self.__filehandler.test_print("buzz")
+        pass

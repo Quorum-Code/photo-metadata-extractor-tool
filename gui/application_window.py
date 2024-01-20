@@ -70,7 +70,7 @@ class App(customtkinter.CTk):
         self.sudoc_file = "None"
 
         # Initialize Settings frame
-        self.settings = gui.settings_page.SettingsPage(self)
+        self.settings = gui.settings_page.SettingsPage(self, self.filehandler)
 
         # Initialize Configuration frame
         self.configuration = gui.config_page.ConfigurationPage(self)
