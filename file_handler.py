@@ -15,18 +15,33 @@ DEFAULT_SETTINGS = {
 
 DEFAULT_CONFIGURATION = {
     "token": {
+        "url": "https://oauth.oclc.org/token",
         "headers": {
-
+            "accept": "application/json"
         },
-        "parameters": {
-
+        "body": {
+            "grant_type": "client_credentials",
+            "scope": "wcapi",
+            "context": 285
         }
     },
     "query": {
+        "url": "https://americas.discovery.api.oclc.org/worldcat/search/v2/bibs",
         "headers": {
-
+            "accept": "application/json"
         },
         "parameters": {
+            "q": "",
+            "heldByInstitutionID": "128807,45266",
+            "itemType": "",
+            "itemSubType": "",
+            "retentionCommitments": "false",
+            "facets": "content",
+            "groupRelatedEditions": "false",
+            "groupVariantRecords": "false",
+            "orderBy": "bestMatch",
+            "offset": 1,
+            "limit": 10
 
         }
     }
@@ -68,8 +83,7 @@ class FileHandler:
         # Load secrets as dict
         self.__secrets: dict = self.__load_secrets()
 
-        print(f"json: {self.__json_data}")
-        print(f"secrets: {self.__secrets}")
+        print(self.get_token_body())
 
     def test_print(self, text):
         print(f"File handler function called with: {text}")
@@ -124,6 +138,39 @@ class FileHandler:
 
     def get_secrets(self) -> dict:
         pass
+
+    def get_token_headers(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["token"]["headers"])
+
+    def get_token_body(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["token"]["body"])
+
+    def get_query_headers(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["query"]["headers"])
+
+    def get_query_parameters(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["query"]["parameters"])
+
+    def set_config(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str):
+        token_headers = self.__json_form_str(token_headers)
+        token_body = self.__json_form_str(token_body)
+        query_headers = self.__json_form_str(query_headers)
+        query_parameters = self.__json_form_str(query_parameters)
+
+        new_dict = {
+            "token": {},
+            "query": {}
+        }
+
+        new_dict["token"]["headers"] = json.loads(token_headers)
+        new_dict["token"]["body"] = json.loads(token_body)
+        new_dict["query"]["headers"] = json.loads(query_headers)
+        new_dict["query"]["parameters"] = json.loads(query_parameters)
+
+        # todo save dict to json
+
+    def __json_form_str(self, text: str) -> str:
+        return text.replace('\'', '\"')
 
     def __init_pmet_folder(self):
         # Check if settings folder exists

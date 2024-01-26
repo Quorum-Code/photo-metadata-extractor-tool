@@ -73,7 +73,7 @@ class App(customtkinter.CTk):
         self.settings = gui.settings_page.SettingsPage(self, self.filehandler)
 
         # Initialize Configuration frame
-        self.configuration = gui.config_page.ConfigurationPage(self)
+        self.configuration = gui.config_page.ConfigurationPage(self, self.filehandler)
 
         # Initialize Info frame
         self.info_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")

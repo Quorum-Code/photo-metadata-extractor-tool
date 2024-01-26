@@ -1,9 +1,13 @@
+import tkinter
+
 import customtkinter
+import file_handler as fh
 
 
 class ConfigurationPage:
-    def __init__(self, parent):
+    def __init__(self, parent, file_handler: fh.FileHandler):
         self.__parent = parent
+        self.__file_handler = file_handler
 
         # Create settings frame
         self.configuration_frame = customtkinter.CTkFrame(self.__parent, corner_radius=0, fg_color="transparent")
@@ -64,8 +68,42 @@ class ConfigurationPage:
                                                      fg_color="transparent")
         self.config_buttons.grid(row=4, column=0, padx=10, pady=10)
 
-        self.load_default_parameters = customtkinter.CTkButton(self.config_buttons, text="Load Default")
+        self.load_default_parameters = customtkinter.CTkButton(self.config_buttons,
+                                                               text="Load Default",
+                                                               command=self.__load_reload_text)
         self.load_default_parameters.grid(row=0, column=0, padx=10, pady=0)
 
-        self.update_custom_parameters = customtkinter.CTkButton(self.config_buttons, text="Save Config")
+        self.update_custom_parameters = customtkinter.CTkButton(self.config_buttons,
+                                                                text="Save Config",
+                                                                command=self.__save_config_text)
         self.update_custom_parameters.grid(row=0, column=1, padx=10, pady=0)
+
+        self.__load_config_text()
+
+    def __load_reload_text(self):
+        self.__clear_config_text()
+        self.__load_config_text()
+
+    def __clear_config_text(self):
+        # Clears text from "0.0" -> first line.first column, to tkinter.END -> end of text
+        self.token_header_textbox.delete("0.0", tkinter.END)
+        self.token_parameters_textbox.delete("0.0", tkinter.END)
+
+        self.query_header_textbox.delete("0.0", tkinter.END)
+        self.query_parameters_textbox.delete("0.0", tkinter.END)
+
+    def __load_config_text(self):
+        token_headers = self.__file_handler.get_token_headers()
+        token_body = self.__file_handler.get_token_body()
+        query_headers = self.__file_handler.get_query_headers()
+        query_parameters = self.__file_handler.get_query_parameters()
+
+        self.token_header_textbox.insert("0.0", token_headers)
+        self.token_parameters_textbox.insert("0.0", token_body)
+        self.query_header_textbox.insert("0.0", query_headers)
+        self.query_parameters_textbox.insert("0.0", query_parameters)
+
+    def __save_config_text(self):
+        token_headers = self.token_header_textbox.get("0.0", tkinter.END)
+
+        self.__file_handler.set_config(token_headers, "", "", "")
