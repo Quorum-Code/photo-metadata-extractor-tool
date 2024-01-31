@@ -137,6 +137,7 @@ class FileHandler:
     def get_secrets(self) -> dict:
         pass
 
+    # todo: find best practice for copying dictionaries from an object
     def get_token_headers(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["token"]["headers"])
 
@@ -176,6 +177,15 @@ class FileHandler:
             # throw error window saying json syntax error
             return False
 
+    def set_secrets(self, client_id: str, client_secret: str):
+        self.__save_secrets(client_id, client_secret)
+        self.__secrets = self.__load_secrets()
+
+        print(f"Secrets! {self.__secrets}")
+
+    def load_default_config(self):
+        self.__json_data["configuration"] = DEFAULT_CONFIGURATION
+
     def __json_form_str(self, text: str) -> str:
         return text.replace('\'', '\"')
 
@@ -207,7 +217,7 @@ class FileHandler:
         if not self.pmet_secrets_file_path.exists():
             try:
                 with self.pmet_secrets_file_path.open("wb") as f:
-                    # todo: figure out why this is highlighted, optional param?
+                    # no longer warning highlighted?? ok....
                     f.write(codecs.encode(bytes(f"{DEFAULT_SECRETS}", "utf-8"), "hex"))
             except FileNotFoundError:
                 return False
@@ -261,7 +271,6 @@ class FileHandler:
 
         with open(self.pmet_secrets_file_path, "wb") as f:
             f.write(codecs.encode(bytes(f"{new_secrets}", "utf-8"), "hex"))
-        return
 
     def __load_secrets(self) -> dict:
         with open(self.pmet_secrets_file_path, "rb") as f:

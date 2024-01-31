@@ -59,4 +59,5 @@ class SettingsPage:
 
         print(f"client_id: {self.client_textbox.get()} client_secret: {self.secret_textbox.get()}")
         self.__filehandler.test_print("buzz")
-        pass
+
+        self.__filehandler.set_secrets(self.client_textbox.get(), self.secret_textbox.get())
