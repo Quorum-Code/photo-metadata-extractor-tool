@@ -1,5 +1,5 @@
 import tkinter
-
+import json
 import customtkinter
 import file_handler as fh
 
@@ -8,6 +8,7 @@ class ConfigurationPage:
     def __init__(self, parent, file_handler: fh.FileHandler):
         self.__parent = parent
         self.__file_handler = file_handler
+        self.popup_window = None
 
         # Create settings frame
         self.configuration_frame = customtkinter.CTkFrame(self.__parent, corner_radius=0, fg_color="transparent")
@@ -70,7 +71,7 @@ class ConfigurationPage:
 
         self.load_default_parameters = customtkinter.CTkButton(self.config_buttons,
                                                                text="Load Default",
-                                                               command=self.__load_reload_text)
+                                                               command=self.__load_default_text)
         self.load_default_parameters.grid(row=0, column=0, padx=10, pady=0)
 
         self.update_custom_parameters = customtkinter.CTkButton(self.config_buttons,
@@ -83,6 +84,19 @@ class ConfigurationPage:
     def __load_reload_text(self):
         self.__clear_config_text()
         self.__load_config_text()
+
+    def __load_default_text(self):
+        self.__clear_config_text()
+
+        try:
+            self.token_header_textbox.insert("0.0", json.dumps(fh.DEFAULT_CONFIGURATION["token"]["headers"], indent=2))
+            self.token_parameters_textbox.insert("0.0", json.dumps(fh.DEFAULT_CONFIGURATION["token"]["body"], indent=2))
+            self.query_header_textbox.insert("0.0", json.dumps(fh.DEFAULT_CONFIGURATION["query"]["headers"], indent=2))
+            self.query_parameters_textbox.insert("0.0", json.dumps(fh.DEFAULT_CONFIGURATION["query"]["parameters"],
+                                                                   indent=2))
+
+        except KeyError:
+            print("KeyError while loading default config from file_handler.py")
 
     def __clear_config_text(self):
         # Clears text from "0.0" -> first line.first column, to tkinter.END -> end of text
@@ -105,5 +119,18 @@ class ConfigurationPage:
 
     def __save_config_text(self):
         token_headers = self.token_header_textbox.get("0.0", tkinter.END)
+        token_body = self.token_parameters_textbox.get("0.0", tkinter.END)
+        query_headers = self.query_header_textbox.get("0.0", tkinter.END)
+        query_parameters = self.query_parameters_textbox.get("0.0", tkinter.END)
 
-        self.__file_handler.set_config(token_headers, "", "", "")
+        is_successful = self.__file_handler.set_config(token_headers, token_body, query_headers, query_parameters)
+
+        if not is_successful:
+            # todo, change warning text to ERROR: json decoding error
+
+            print("JSON Decoding error")
+            pass
+
+    def __refresh_config_text(self):
+        # todo: beautify str dicts
+        pass

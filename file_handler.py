@@ -83,8 +83,6 @@ class FileHandler:
         # Load secrets as dict
         self.__secrets: dict = self.__load_secrets()
 
-        print(self.get_token_body())
-
     def test_print(self, text):
         print(f"File handler function called with: {text}")
 
@@ -151,7 +149,7 @@ class FileHandler:
     def get_query_parameters(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["query"]["parameters"])
 
-    def set_config(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str):
+    def set_config(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str) -> bool:
         token_headers = self.__json_form_str(token_headers)
         token_body = self.__json_form_str(token_body)
         query_headers = self.__json_form_str(query_headers)
@@ -162,12 +160,21 @@ class FileHandler:
             "query": {}
         }
 
-        new_dict["token"]["headers"] = json.loads(token_headers)
-        new_dict["token"]["body"] = json.loads(token_body)
-        new_dict["query"]["headers"] = json.loads(query_headers)
-        new_dict["query"]["parameters"] = json.loads(query_parameters)
+        try:
+            new_dict["token"]["headers"] = json.loads(token_headers)
+            new_dict["token"]["body"] = json.loads(token_body)
+            new_dict["query"]["headers"] = json.loads(query_headers)
+            new_dict["query"]["parameters"] = json.loads(query_parameters)
 
-        # todo save dict to json
+            self.__set_configuration(new_dict)
+            self.__save_json()
+
+            return True
+
+        except json.JSONDecodeError:
+            # load the default configs
+            # throw error window saying json syntax error
+            return False
 
     def __json_form_str(self, text: str) -> str:
         return text.replace('\'', '\"')
@@ -240,7 +247,12 @@ class FileHandler:
 
         return
 
+    def __set_configuration(self, new_config: dict):
+        self.__json_data["configuration"] = new_config
+
     def __save_json(self):
+        print("Saving JSON...")
+        print(self.__json_data)
         with open(self.pmet_setting_file_path, "w") as f:
             f.write(json.dumps(self.__json_data, indent=self.__indent))
 
