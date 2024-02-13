@@ -10,10 +10,13 @@ class HomePage:
     def __init__(self, parent):
         self.__parent = parent
         self.__file_character_limit = 40
-
         self.__photo_folder = "no folder selected"
         self.__sudoc_file = "no file selected"
         self.__file_icon_local_path = "icons\\folder-icon.png"
+
+        # Reference to QThread must be stored or will be destroyed by garbage collector
+        self.__thread_object: OCRHanlder = None
+
         # todo add error handling for no image found
         self.__file_icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.__file_icon_local_path)
         self.__file_icon = customtkinter.CTkImage(Image.open(self.__file_icon_path), size=(24, 24))
@@ -60,7 +63,8 @@ class HomePage:
         self.progress_bar.set(0)
         self.progress_bar.grid(row=1, column=0, padx=10)
 
-        self.process_photo_button = customtkinter.CTkButton(self.process_frame, text="Process Photos")
+        self.process_photo_button = customtkinter.CTkButton(self.process_frame, text="Process Photos",
+                                                            command=self.start_text_extraction)
         self.process_photo_button.grid(row=2, column=0, padx=10, pady=20)
 
         # Sub Home frame - SuDoc file frame
@@ -105,18 +109,45 @@ class HomePage:
             filename = f"...{filename[trim_index:]}"
         return filename
 
+    def start_text_extraction(self):
+        print("starting extractor")
+
+        self.__thread_object = OCRHanlder()
+        self.__thread_object.directory = self.__photo_folder
+        self.__thread_object.is_finished.connect(self.__debug_is_finished)
+        self.__thread_object.results_ready.connect(self.__debug_result_ready)
+        self.__thread_object.progress_percent.connect(self.__debug_progress_percent)
+
+        self.__thread_object.start()
+
+        print("finished initializing extractor")
+        return
+
+    def __debug_is_finished(self):
+        print("is_finished")
+
+    def __debug_result_ready(self, text: str):
+        print(f"result_ready: {text}")
+
+    def __debug_progress_percent(self, percent: float):
+        print(f"percent: {percent}")
+
 
 class OCRHanlder(QThread):
-    # is_finished = pyqtSignal()
+    is_finished = pyqtSignal()
+    results_ready = pyqtSignal(str)
+    progress_percent = pyqtSignal(float)
 
     def __init__(self):
         super().__init__()
+        self.directory = None
 
-        # may need to be converted to class variables
-        self.is_finished = pyqtSignal()
-        self.progress_percent = pyqtSignal(float)
-        # needs pyqT Signals
         return
 
-    def extract(self, directory: str):
-        return ocr_lines.read_data(directory, self.progress_percent)
+    def run(self):
+        print("started extraction")
+        results = ocr_lines.read_data(self.directory, self.progress_percent)
+        print(results)
+        self.results_ready.emit(results)
+        self.is_finished.emit()
+        return results

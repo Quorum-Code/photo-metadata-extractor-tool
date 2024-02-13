@@ -36,6 +36,41 @@ count = 0
 ### The device with which to run image recognition functions on
 device = 'cpu'
 
+# The read_data function for use
+
+
+def read_data(path, progress_signal: pyqtSignal):
+    """
+    Function to initiate image processing
+
+    :param path: Path of directory with images
+    :param progress_signal: Signal for GUI process bar
+    :return: Path of written csv
+    """
+    print("Beginning Script")
+
+    global count
+    count = 0
+
+    if path == "":
+        print("empty path")
+        return
+
+    img_dir = os.listdir(path)
+
+    img_dir = [os.path.join(path, img) for img in img_dir]
+
+    img_dir.sort(key=lambda x: os.path.getctime(x))
+
+    total_images = len(img_dir)
+
+    extracted_data = par_img_proc_caller(img_dir, progress_signal, total_images)
+
+    datapath = __write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
+
+    print("finished image reading lines")
+
+    return (datapath)
 
 def ocr(image, processor, model):
     """
@@ -53,7 +88,7 @@ def ocr(image, processor, model):
     return generated_text
 
 
-def distinguish_rows(lst, thresh=15):
+def __distinguish_rows(lst, thresh=15):
     """
     Parses returned bounding boxes from objected detected function by rows
     :param lst: List of bounding boxes
@@ -73,7 +108,7 @@ def distinguish_rows(lst, thresh=15):
     yield sublists
 
 
-def get_distance(preds):
+def __get_distance(preds):
     """
     Gathers measurements for a list of bounding boxes for further processing
 
@@ -103,7 +138,7 @@ def get_distance(preds):
     return detections
 
 
-def pub_year_extraction(data):
+def __pub_year_extraction(data):
     """
     Parse extracted text for phrase that could be a year
 
@@ -117,7 +152,7 @@ def pub_year_extraction(data):
     return pub_year
 
 
-def merge_dicts(data):
+def __merge_dicts(data):
     """
     Function to merge a list of dictionaries into one
 
@@ -130,7 +165,7 @@ def merge_dicts(data):
     return merged_dict
 
 
-def write_dataframe(data, label):
+def __write_dataframe(data, label):
     """
     Function to write extracted data out to a csv
 
@@ -149,14 +184,14 @@ def write_dataframe(data, label):
     init_datapath = './extracted_data'
     datapath = "extracted_data/extracted_data.csv"
     os.makedirs(init_datapath, exist_ok=True)
-    data = merge_dicts(data)
+    data = __merge_dicts(data)
     output_data = pd.DataFrame(
         columns=['ID', 'Title', 'SuDoc', 'Publication Year', 'Path', 'Error Code', 'Query Status', 'Sudoc Image',
                  'Title Image'])
     title_key = sudoc_key = text_type_1_val = text_type_2_val = pub_year = ""
     # for idx in range(len(data)):
     for idx, key in enumerate(data):
-        label_pred = np.reshape(text_feature_extractor(data[key]), (1, -1))
+        label_pred = np.reshape(__text_feature_extractor(data[key]), (1, -1))
         text_type = label_classifier.predict(label_pred)[0]
         if text_type == 'title':
             text_type_1_key = 'Title'
@@ -167,7 +202,7 @@ def write_dataframe(data, label):
             text_type_2_val = data[key]
             data[key] = data[key].replace(" ", "")
             sudoc_key = key
-            pub_year = pub_year_extraction(data[key])
+            pub_year = __pub_year_extraction(data[key])
         if (idx % 2) == 1:
             output_data = pd.concat([output_data, pd.DataFrame(
                 [{'ID': (idx - 1) / 2, text_type_1_key: text_type_1_val, text_type_2_key: text_type_2_val,
@@ -180,7 +215,7 @@ def write_dataframe(data, label):
     return datapath
 
 
-def text_classification(img, classifier):
+def __text_classification(img, classifier):
     """
     Function to classify text within an image as handwritten or typed
 
@@ -215,7 +250,7 @@ def text_classification(img, classifier):
     return label
 
 
-def load_models():
+def __load_models():
     """
     Function to load text detection, text recognition, and text classification models
 
@@ -249,7 +284,7 @@ def load_models():
     return processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline
 
 
-def text_feature_extractor(value):
+def __text_feature_extractor(value):
     """
     Function to take measurements from a text string for classification purposes
 
@@ -268,8 +303,8 @@ def text_feature_extractor(value):
     return [text_length, words, num_text_ratio, avg_word_length]
 
 
-def img_recognition(img_path, processor_typed, model_typed, processor_hw,
-                    model_hw, writing_classifier, pipeline, total_images, progress_signal):
+def __img_recognition(img_path, processor_typed, model_typed, processor_hw,
+                      model_hw, writing_classifier, pipeline, total_images, progress_signal):
     """
     Function to perform the bulk of the text recognition tasks
 
@@ -290,8 +325,8 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
     img = keras_ocr.tools.read(img_path)
     ext_txt = ""
     pred = pipeline.recognize([img])
-    pred = get_distance(pred)
-    pred = list(distinguish_rows(pred))
+    pred = __get_distance(pred)
+    pred = list(__distinguish_rows(pred))
     pred = list(filter(lambda x: x != [], pred))
     for row in pred:
         row = sorted(row, key=lambda x: x['dist_from_origin'])
@@ -305,7 +340,7 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
             if uby >= lby:
                 uby = lby - (uby - lby + 1)
             cropped_img = img[uby:lby, ubx:lbx]
-            label = text_classification(cropped_img, writing_classifier)
+            label = __text_classification(cropped_img, writing_classifier)
             # print(label)
             if label in ['Printed_extended', 'Other_extended']:
                 # if label == 'typed':
@@ -341,7 +376,7 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     """
     start_time = time.time()
 
-    processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline = load_models()
+    processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline = __load_models()
 
     load_time = time.time() - start_time
 
@@ -365,7 +400,7 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
         for worker in range(0, 2):
             # extracted_data.append(exe.submit(img_recognition, img_dir[idx:idx+2], processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline, total_images, progress_signal))
             collected_data.append(
-                exe.submit(img_recognition, img_dir[(idx + worker)], processor_typed, model_typed, processor_hw,
+                exe.submit(__img_recognition, img_dir[(idx + worker)], processor_typed, model_typed, processor_hw,
                            model_hw, writing_classifier,
                            pipeline, total_images, progress_signal))
 
@@ -423,37 +458,5 @@ def read_data():
     print("finished image reading lines")
     return datapath
 '''
-
-
-# The read_data function for use
-
-def read_data(path, progress_signal: pyqtSignal):
-    """
-    Function to initiate image processing
-
-    :param path: Path of directory with images
-    :param progress_signal: Signal for GUI process bar
-    :return: Path of written csv
-    """
-    print("Beginning Script")
-
-    global count
-    count = 0
-
-    img_dir = os.listdir(path)
-
-    img_dir = [os.path.join(path, img) for img in img_dir]
-
-    img_dir.sort(key=lambda x: os.path.getctime(x))
-
-    total_images = len(img_dir)
-
-    extracted_data = par_img_proc_caller(img_dir, progress_signal, total_images)
-
-    datapath = write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
-
-    print("finished image reading lines")
-
-    return (datapath)
 
 # read_data()
