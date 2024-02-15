@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QThread, pyqtSignal
-from ocr_lines_new3 import read_data
+from ocr_lines import read_data
 
 
 class QueryWorker(QThread):
@@ -12,7 +12,7 @@ class QueryWorker(QThread):
         self.directory_path = directory_path
 
     def run(self):
-        result = read_data(self.directory_path,self.progress_updated)
+        result = read_data(self.directory_path, self.progress_updated)
         self.result_ready.emit(result)  # Emit the signal when the result is ready
         self.finished.emit()
 

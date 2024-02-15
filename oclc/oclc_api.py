@@ -237,3 +237,7 @@ class OCLCSession:
 
 if __name__ == "__main__":
     oclcsession = OCLCSession("config.ini")
+    print(f"Qh: {oclcsession.query_headers}")
+    print(f"Qb: {oclcsession.query_body}")
+    print(f"Ah: {oclcsession.get_auth_headers()}")
+    print(f"Ab: {oclcsession.get_auth_body()}")
