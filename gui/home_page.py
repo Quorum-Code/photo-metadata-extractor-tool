@@ -55,7 +55,8 @@ class HomePage:
         self.process_frame.grid(row=2, column=0, padx=10, pady=10)
 
         # Progress text
-        self.progress_text = customtkinter.CTkLabel(self.process_frame, corner_radius=0, text="No Process Running")
+        self.progress_text = customtkinter.CTkLabel(self.process_frame, corner_radius=0,
+                                                    text="No Photos being processed...")
         self.progress_text.grid(row=0, column=0)
 
         # Progress bar
@@ -88,6 +89,24 @@ class HomePage:
         self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text=self.__sudoc_file, anchor="w",
                                                       width=300)
         self.sudoc_file_name.grid(row=0, column=2, padx=10, pady=10)
+
+        # Process Subframe
+        self.query_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0, fg_color="transparent")
+        self.query_frame.grid(row=4, column=0, padx=10, pady=10)
+
+        # Progress text
+        self.query_progress_text = customtkinter.CTkLabel(self.query_frame, corner_radius=0,
+                                                          text="No Queries being processed...")
+        self.query_progress_text.grid(row=0, column=0)
+
+        # Progress bar
+        self.query_progress_bar = customtkinter.CTkProgressBar(self.query_frame, width=300)
+        self.query_progress_bar.set(0)
+        self.query_progress_bar.grid(row=1, column=0, padx=10)
+
+        self.process_photo_button = customtkinter.CTkButton(self.query_frame, text="Process Queries",
+                                                            command=None)
+        self.process_photo_button.grid(row=2, column=0, padx=10, pady=20)
 
     def ask_photo_folder(self):
         selected_folder = filedialog.askdirectory()

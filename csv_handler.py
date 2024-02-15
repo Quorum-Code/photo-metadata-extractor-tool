@@ -26,6 +26,8 @@ class CSVDocument:
         self.__file_path = ""
         self.__time_stamp_format = "%m-%d-%Y_%H.%M.%S"
         self.__file_extension = ".csv"
+        self.__delimiter = '|'
+        self.__column_names = ["RawSuDoc", "SuDoc", "Title", "Author", "PublicationDate"]
         self.__folder_name = "extractions"
         self.__folder_path = os.path.join(self.__datahandler.get_program_path(), self.__folder_name)
 
@@ -37,11 +39,20 @@ class CSVDocument:
         if folder_path != "" and os.path.exists(folder_path):
             self.__folder_path = folder_path
         # verify default folder exists
-        else:
+        elif not os.path.exists(self.__folder_path):
+            print("ERROR: CSV file path does not exist")
             return
 
+        print(self.__folder_path)
+
         # generate document file
-        # add column names
+        with open(os.path.join(self.__folder_path, self.generate_file_name()), 'w', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile, delimiter=self.__delimiter, quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow(self.__column_names)
+            csv_writer.writerow(['r', 's', 't', 'a', 'pd'])
+
+
+
         return
 
     def write_row(self, sudoc_record: SuDocRecord):

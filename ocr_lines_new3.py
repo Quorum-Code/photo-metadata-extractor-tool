@@ -10,7 +10,7 @@ import keras_ocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 import pickle
 from concurrent.futures import ThreadPoolExecutor
-#from multiprocessing import cpu_count
+# from multiprocessing import cpu_count
 from gc import collect
 
 from scipy.ndimage import maximum_filter
