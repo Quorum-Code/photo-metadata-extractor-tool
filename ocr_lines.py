@@ -64,13 +64,16 @@ def read_data(path, progress_signal: pyqtSignal):
 
     total_images = len(img_dir)
 
-    extracted_data = par_img_proc_caller(img_dir, progress_signal, total_images)
+    extracted_data = __par_img_proc_caller(img_dir, progress_signal, total_images)
 
-    datapath = __write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
+    print(extracted_data)
+
+    # datapath = __write_dataframe(extracted_data, os.path.basename(os.path.normpath(path)))
 
     print("finished image reading lines")
 
-    return (datapath)
+    return  # datapath
+
 
 def ocr(image, processor, model):
     """
@@ -365,7 +368,7 @@ def __img_recognition(img_path, processor_typed, model_typed, processor_hw,
     return extractions
 
 
-def par_img_proc_caller(img_dir, progress_signal, total_images):
+def __par_img_proc_caller(img_dir, progress_signal, total_images):
     """
     Function to call the image processing block in parallel
 

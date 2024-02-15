@@ -3,6 +3,7 @@ import json
 import os
 import codecs
 import copy
+import sys
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
@@ -10,6 +11,7 @@ DEFAULT_DB_FILE_PATH = Path.home().joinpath("pmet/pmet-data.json")
 DEFAULT_SECRETS_FILE_PATH = Path.home().joinpath("pmet/.secrets")
 
 DEFAULT_SETTINGS = {
+    "program_path": "",
     "style": "system"
 }
 
@@ -82,6 +84,15 @@ class FileHandler:
 
         # Load secrets as dict
         self.__secrets: dict = self.__load_secrets()
+
+    def save_data(self, data: dict):
+        with self.pmet_setting_file_path.open("w") as f:
+            f.write(json.dumps(data, indent=self.__indent))
+
+    def get_program_path(self) -> str:
+        if "program_path" in self.__json_data["settings"].keys() and self.__json_data["settings"]["program_path"] != "":
+            return self.__json_data["settings"]["program_path"]
+        return None
 
     def test_print(self, text):
         print(f"File handler function called with: {text}")
@@ -205,6 +216,7 @@ class FileHandler:
             try:
                 with self.pmet_setting_file_path.open("w") as f:
                     default_data = {"settings": DEFAULT_SETTINGS, "configuration": DEFAULT_CONFIGURATION}
+                    self.__init_program_path(default_data)
                     f.write(json.dumps(default_data, indent=self.__indent))
                 # self.pmet_setting_file_path.write_text(json.dumps(DEFAULT_SETTINGS))
             except FileNotFoundError:
@@ -212,6 +224,15 @@ class FileHandler:
             except OSError:
                 return False
         return True
+
+    def __init_program_path(self, default_data: dict):
+        if os.getcwd().endswith("\\photo-metadata-extractor-tool") and os.path.exists("gui") and os.path.exists("oclc"):
+            default_data["settings"]["program_path"] = os.getcwd()
+            self.save_data(default_data)
+        else:
+            print("The program must be started at its directory to be initialized."
+                  " (After the first run it should be able to be run from any directory.)")
+            sys.exit("ERROR: Bad pwd")
 
     def __init_secrets_file(self):
         if not self.pmet_secrets_file_path.exists():
@@ -233,6 +254,8 @@ class FileHandler:
         :return:
         """
 
+        # TODO: verify integrity of stored json data
+
         json_data = {}
         try:
             with open(self.pmet_setting_file_path) as f:
@@ -245,10 +268,18 @@ class FileHandler:
             # Abort loading from file, load default
             else:
                 return DEFAULT_DATA
+
+        if "program_path" not in json_data["settings"].keys() or json_data["settings"]["program_path"] == "":
+            print("No program path")
+            self.__init_program_path(json_data)
+        else:
+            print("has program path")
+
         return json_data
 
     def __restore_default_data(self):
         json_data = DEFAULT_DATA
+        self.__init_program_path(json_data)
 
         # todo: archive old data before overwriting... i.e save as pmet-data-1-17-2024.json
 

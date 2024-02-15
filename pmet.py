@@ -12,9 +12,6 @@ class PMET:
     def start_window(self):
         self.application_window.mainloop()
 
-    def extract_text(self):
-        pass
-
 
 def main():
     pmet = PMET()
