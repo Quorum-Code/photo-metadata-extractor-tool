@@ -180,31 +180,34 @@ def text_classification(img, classifier):
     :param classifier: Model to classify image
     :return: Label from resulting classification
     """
-
     img_num = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    th, th_img = cv2.threshold(img_num, 0,255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    th, th_img = cv2.threshold(img_num, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     img_height, img_width = np.array(img_num).shape
-    maxima_coll = (th_img == maximum_filter(th_img, 3, mode='constant', cval=0.0))
-    maxima_count = sum([sum(line) for line in maxima_coll])
-    upper_quart_intensity = cv2.countNonZero(th_img[0:int(img_height/4)][0:int(img_width/4)])
-    contours, hierarchy = cv2.findContours(img_num, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(img, contours, -1, (0, 255, 0), 3)
-    avg_size = 0
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        scale_factor = 0.1
-        size = area * scale_factor ** 2
-        avg_size = avg_size + size
-    avg_size = avg_size / len(contours) if len(contours) > 0 else 1
+    counts, bins = np.histogram(img_num, range(257))
+    peaks = find_peaks(counts)
+    maxima_count = len(peaks[0])
     c = 255 / (np.log(1 + np.max(img_num)))
     log_transformed = c * np.log(1 + img_num)
     log_transformed = np.array(log_transformed, dtype=np.uint8)
     log_transformed_mean = log_transformed.mean()
     log_transformed_var = log_transformed.var()
-    ext_features = np.reshape([ th, maxima_count, upper_quart_intensity, avg_size, log_transformed_mean, log_transformed_var], (1, -1))
+    log_transformed_std = log_transformed.std()
+    max_int = img_num.max()
+    min_int = img_num.min()
+    quart_range = (max_int - min_int) / 4
+    upper_quart_count = np.count_nonzero(img_num >= (max_int - quart_range))
+    upper_quart_perc = (upper_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1) * 100
+    lower_quart_count = np.count_nonzero(img_num <= (min_int + quart_range))
+    lower_quart_perc = (lower_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1) * 100
+
+    ext_features = np.reshape([log_transformed_mean, th,
+                               maxima_count, upper_quart_perc, lower_quart_perc,
+                               log_transformed_std, log_transformed_var], (1, -1))
+
     label = classifier.predict(ext_features)
     del img_num, th_img, img
     return label
+
 
 def load_models():
     """
