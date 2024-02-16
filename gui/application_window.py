@@ -1,5 +1,7 @@
 import customtkinter
-import gui.home_page, gui.settings_page, gui.config_page
+import gui.home_page
+import gui.settings_page
+import gui.config_page
 from file_handler import FileHandler
 
 

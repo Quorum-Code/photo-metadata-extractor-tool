@@ -16,6 +16,7 @@ from gc import collect
 from scipy.ndimage import maximum_filter
 from scipy.signal import find_peaks
 
+
 def warn(*args, **kwargs):
     """
     Warning Suppression
@@ -23,6 +24,7 @@ def warn(*args, **kwargs):
     :return: nothing
     """
     pass
+
 
 ### Call to skip warning function directly above and further warning suppression ###
 import warnings
@@ -36,6 +38,7 @@ count = 0
 
 ### The device with which to run image recognition functions on
 device = 'cpu'
+
 
 def ocr(image, processor, model):
     """
@@ -54,6 +57,7 @@ def ocr(image, processor, model):
     collect()
     return generated_text
 
+
 def distinguish_rows(lst, thresh=50):
     """
     Parses returned bounding boxes from objected detected function by rows
@@ -63,17 +67,18 @@ def distinguish_rows(lst, thresh=50):
     """
 
     sublists = []
-    for i in range(0, len(lst)-1):
-        if lst[i+1]['distance_y'] - lst[i]['distance_y'] <= thresh:
+    for i in range(0, len(lst) - 1):
+        if lst[i + 1]['distance_y'] - lst[i]['distance_y'] <= thresh:
             if lst[i] not in sublists:
                 sublists.append(lst[i])
-            sublists.append(lst[i+1])
+            sublists.append(lst[i + 1])
         else:
             if i == 0:
                 sublists.append(lst[i])
             yield sublists
-            sublists = [lst[i+1]]
+            sublists = [lst[i + 1]]
     yield sublists
+
 
 def get_distance(preds):
     """
@@ -89,9 +94,9 @@ def get_distance(preds):
         for group in out:
             top_left_x, top_left_y = group[1][0]
             bottom_right_x, bottom_right_y = group[1][2]
-            center_x = (top_left_x + bottom_right_x)/2
-            center_y = (top_left_y + bottom_right_y)/2
-            dist_from_origin = math.dist([x0,y0], [center_x, center_y])
+            center_x = (top_left_x + bottom_right_x) / 2
+            center_y = (top_left_y + bottom_right_y) / 2
+            dist_from_origin = math.dist([x0, y0], [center_x, center_y])
             distance_y = center_y - y0
             detections.append({
                 'text': group[0],
@@ -104,6 +109,7 @@ def get_distance(preds):
             idx = idx + 1
     return detections
 
+
 def pub_year_extraction(data):
     """
     Parse extracted text for phrase that could be a year
@@ -113,9 +119,10 @@ def pub_year_extraction(data):
     """
     pub_year = ""
     for phrase in data.split():
-        if phrase.isdigit() and (1600 <= int(phrase) <= datetime.datetime.today().year+1):
+        if phrase.isdigit() and (1600 <= int(phrase) <= datetime.datetime.today().year + 1):
             pub_year = phrase
     return pub_year
+
 
 def merge_dicts(data):
     """
@@ -129,6 +136,7 @@ def merge_dicts(data):
         merged_dict.update(data[idx])
     return merged_dict
 
+
 def write_dataframe(data, label):
     """
     Function to write extracted data out to a csv
@@ -141,13 +149,15 @@ def write_dataframe(data, label):
     print("Writing Out Data to CSV")
 
     label_classifier = pickle.load(open("classifiers/rf_model.sav", 'rb'))
-    #label_classifier = pickle.load(open("MLModelsList/classifiers/rf_model.sav", 'rb'))
+    # label_classifier = pickle.load(open("MLModelsList/classifiers/rf_model.sav", 'rb'))
     curr_time = datetime.datetime.now()
     init_datapath = './extracted_data'
     datapath = "extracted_data/extracted_data.csv"
     os.makedirs(init_datapath, exist_ok=True)
     data = merge_dicts(data)
-    output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year', 'Path','Error Code','Query Status', 'Sudoc Image', 'Title Image'])
+    output_data = pd.DataFrame(
+        columns=['ID', 'Title', 'SuDoc', 'Publication Year', 'Path', 'Error Code', 'Query Status', 'Sudoc Image',
+                 'Title Image'])
     title_key = sudoc_key = text_type_1_val = text_type_2_val = text_type_1_key = text_type_2_key = pub_year = ""
     for idx, key in enumerate(data):
         label_pred = np.reshape(text_feature_extractor(data[key]), (1, -1))
@@ -165,13 +175,16 @@ def write_dataframe(data, label):
             text_type_2_val = data[key]
             sudoc_key = key
         if (idx % 2) == 1:
-            output_data = pd.concat([output_data, pd.DataFrame([{'ID': int((idx-1)/2), text_type_1_key: text_type_1_val, text_type_2_key: text_type_2_val,
-                                    'Publication Year': pub_year, 'Sudoc Image': sudoc_key, 'Title Image': title_key}])], ignore_index=True)
+            output_data = pd.concat([output_data, pd.DataFrame(
+                [{'ID': int((idx - 1) / 2), text_type_1_key: text_type_1_val, text_type_2_key: text_type_2_val,
+                  'Publication Year': pub_year, 'Sudoc Image': sudoc_key, 'Title Image': title_key}])],
+                                    ignore_index=True)
             title_key = sudoc_key = text_type_1_val = text_type_2_val = text_type_1_key = text_type_2_key = pub_year = ""
-    #print(output_data)
+    # print(output_data)
     output_data.to_csv(datapath, index=False)
     print("Completed Writing Step")
     return datapath
+
 
 def text_classification(img, classifier):
     """
@@ -218,7 +231,7 @@ def load_models():
     """
     print("Loading Models")
     writing_classifier = pickle.load(open("classifiers/hgbc_model.sav", 'rb'))
-    #writing_classifier = pickle.load(open("classifiers/text_classifier.sav", 'rb'))
+    # writing_classifier = pickle.load(open("classifiers/text_classifier.sav", 'rb'))
     data_dir = '.'
     alphabet = digits + ascii_letters + "./-(),#:"
     recognizer_alphabet = ''.join(sorted(set(alphabet.lower())))
@@ -229,7 +242,7 @@ def load_models():
     )
     recognizer.compile()
     recognizer.model.load_weights('classifiers/curr_recognizer.h5')
-    #recognizer.model.load_weights('MLModelsList/curr_recognizer.h5')
+    # recognizer.model.load_weights('MLModelsList/curr_recognizer.h5')
     pipeline = keras_ocr.pipeline.Pipeline(detector=detector, recognizer=recognizer)
     print("Loading trocr models")
     processor_typed = TrOCRProcessor.from_pretrained('./MLModelsList/ocr_models/typed_ocr_models')
@@ -242,6 +255,7 @@ def load_models():
     ).to(device)
     print("Successfully Loaded Models")
     return processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline
+
 
 def text_feature_extractor(value):
     """
@@ -257,11 +271,14 @@ def text_feature_extractor(value):
     if text_length == 0:
         num_text_ratio = 0
     else:
-        num_text_ratio = numbers/text_length
+        num_text_ratio = numbers / text_length
     avg_word_length = sum(len(word) for word in value) / words
-    return [ text_length, words, num_text_ratio, avg_word_length]
+    return [text_length, words, num_text_ratio, avg_word_length]
 
-img_read_flag=True
+
+img_read_flag = True
+
+
 def img_recognition(img_path, processor_typed, model_typed, processor_hw,
                     model_hw, writing_classifier, pipeline, total_images, progress_signal):
     """
@@ -293,7 +310,7 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
     pred = get_distance(pred)
     pred = list(distinguish_rows(pred))
     for row in pred:
-        row = sorted(row, key=lambda x:x['dist_from_origin'])
+        row = sorted(row, key=lambda x: x['dist_from_origin'])
         for box in row:
             uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0
             lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0
@@ -324,10 +341,11 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
     extractions[img_path] = ext_txt
     print("Completed extraction on image: ", img_path)
     count += 1
-    progress_signal.emit(count/total_images)
+    progress_signal.emit(count / total_images)
     del img, processor_hw, model_hw, processor_typed, model_typed
     collect()
     return extractions
+
 
 def par_img_proc_caller(img_dir, progress_signal, total_images):
     """
@@ -346,25 +364,29 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     time_file.write("Total images: " + str(len(img_dir)) + "\n")
     time_file.write("Model Loading Time: " + str(load_time) + "\n")
     extracted_data = []
-    #num_workers = 2 # if cpu_count() > 5 else 1
+    # num_workers = 2 # if cpu_count() > 5 else 1
     exe = ThreadPoolExecutor(2)
     start_time = time.time()
     collected_data = []
     halfpoint = False
     for idx in range(0, len(img_dir), 2):
         for worker in range(0, 2):
-            collected_data.append(exe.submit(img_recognition, img_dir[(idx+worker)], processor_typed, model_typed, processor_hw, model_hw, writing_classifier,
-                   pipeline, total_images, progress_signal))
+            collected_data.append(
+                exe.submit(img_recognition, img_dir[(idx + worker)], processor_typed, model_typed, processor_hw,
+                           model_hw, writing_classifier,
+                           pipeline, total_images, progress_signal))
 
         for obj in range(len(collected_data)):
             extracted_data.append(collected_data[obj].result())
-        if (idx > int(len(img_dir)/2)) and halfpoint == False:
+        if (idx > int(len(img_dir) / 2)) and halfpoint == False:
             halfpoint = True
-            write_dataframe(extracted_data, os.path.basename(os.path.normpath("extracted_data/temp_extracted_data.csv")))
+            write_dataframe(extracted_data,
+                            os.path.basename(os.path.normpath("extracted_data/temp_extracted_data.csv")))
         collected_data = []
     load_time = time.time() - start_time
     time_file.write("Total Extraction Time: " + str(load_time) + "\n")
     return extracted_data
+
 
 def dir_validation(dir):
     """
@@ -374,10 +396,10 @@ def dir_validation(dir):
     :return: error code
     """
 
-    supported_file_types = [ 'bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
-                             'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
-                             'exr', 'hdr', 'pic'
-                             ]
+    supported_file_types = ['bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
+                            'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
+                            'exr', 'hdr', 'pic'
+                            ]
     if (len(dir) % 2) == 1:
         return 201
     for file in dir:
@@ -386,7 +408,8 @@ def dir_validation(dir):
             return 202
     return 200
 
-def read_data(path,progress_signal):
+
+def read_data(path, progress_signal):
     """
     Function to initiate image processing
 
@@ -395,7 +418,7 @@ def read_data(path,progress_signal):
     :return: Path of written csv
     """
     print("Beginning Script")
-       
+
     global count
     count = 0
 
@@ -410,7 +433,7 @@ def read_data(path,progress_signal):
         print(202)
         return 202
 
-    img_dir = [ os.path.join(path, img) for img in img_dir ]
+    img_dir = [os.path.join(path, img) for img in img_dir]
 
     img_dir.sort(key=lambda x: os.path.getctime(x))
 
@@ -422,4 +445,4 @@ def read_data(path,progress_signal):
 
     print("finished image reading lines")
 
-    return(datapath)
+    return (datapath)

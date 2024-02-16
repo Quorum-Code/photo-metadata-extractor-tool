@@ -2,6 +2,10 @@
 .secrets
 secrets
 
+# Process files
+extractions/*
+extracted_data/*
+
 # Dev Environment Folders
 .idea
 .idea/*
