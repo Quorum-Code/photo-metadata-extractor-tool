@@ -133,6 +133,9 @@ class FileHandler:
         self.__json_data["settings"]["style"] = style
         self.__save_json()
 
+    def get_style(self) -> str:
+        return self.__json_data["settings"]["style"]
+
     def get_settings(self) -> dict:
         return copy.deepcopy(self.__json_data["settings"])
 

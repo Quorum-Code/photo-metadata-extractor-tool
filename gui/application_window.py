@@ -16,7 +16,9 @@ class App(customtkinter.CTk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
-        # Navigation bar
+        """ **************
+        Nav Bar Frame 
+        ************** """
         self.navigation_frame = customtkinter.CTkFrame(self, corner_radius=0)
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
         self.navigation_frame.grid_rowconfigure(3, weight=1)
@@ -59,9 +61,9 @@ class App(customtkinter.CTk):
         self.style_menu = customtkinter.CTkOptionMenu(self.navigation_frame,
                                                       values=["Light", "Dark", "System"],
                                                       command=self.change_style_event)
-        # TODO change to defined setting in json
-        self.style_menu.set("System")
-        self.change_style_event("System")
+        style = self.filehandler.get_style()
+        self.style_menu.set(style)
+        self.change_style_event(style)
         self.style_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
         # Initialize Home frame
@@ -126,5 +128,6 @@ class App(customtkinter.CTk):
         self.select_frame_by_name("info")
 
     def change_style_event(self, style: str):
+        print(f"NEW STYLE: {style}")
         customtkinter.set_appearance_mode(style)
-        # todo set a var in settings config to style
+        self.filehandler.save_style(style)

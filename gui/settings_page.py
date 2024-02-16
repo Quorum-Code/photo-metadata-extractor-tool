@@ -14,7 +14,9 @@ class SettingsPage:
                                                     font=customtkinter.CTkFont(size=20, weight="bold"))
         self.settings_text.grid(row=0, column=0, padx=20, pady=20)
 
-        # Secret setter frame
+        """ **************
+        Secret Setter Frame 
+        ************** """
         self.secret_setter_frame = customtkinter.CTkFrame(self.settings_frame, corner_radius=0, fg_color="transparent")
         self.secret_setter_frame.grid(row=1, column=0, padx=20, pady=20)
 
@@ -34,16 +36,18 @@ class SettingsPage:
                                                         command=self.__save_secrets_event)
         self.save_credentials.grid(row=2, column=0, padx=10, pady=10)
 
-        # Default Style Frame
+        """ **************
+        Process Mode Frame 
+        ************** """
         self.style_frame = customtkinter.CTkFrame(self.settings_frame, corner_radius=0, fg_color="transparent")
         self.style_frame.grid(row=2, column=0, padx=10, pady=10)
 
-        self.default_style_label = customtkinter.CTkLabel(self.style_frame, text="Default Style")
+        self.default_style_label = customtkinter.CTkLabel(self.style_frame, text="Process Mode")
         self.default_style_label.grid(row=0, column=0, padx=10, pady=10)
 
         # Todo set event to save default
         self.default_style_dropdown = customtkinter.CTkOptionMenu(self.style_frame,
-                                                                  values=["Light", "Dark", "System"],
+                                                                  values=["Single-Photo", "Pair-Photo"],
                                                                   command=None)
         self.default_style_dropdown.grid(row=0, column=1, padx=10, pady=10)
         # Todo set it to the saved value
