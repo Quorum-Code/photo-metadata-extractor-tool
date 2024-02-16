@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from gc import collect
 
 from scipy.ndimage import maximum_filter
+from scipy.signal import find_peaks
 
 def warn(*args, **kwargs):
     """
