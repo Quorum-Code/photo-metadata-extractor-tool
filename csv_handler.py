@@ -50,9 +50,6 @@ class CSVDocument:
             csv_writer = csv.writer(csvfile, delimiter=self.__delimiter, quotechar=' ', quoting=csv.QUOTE_MINIMAL)
             csv_writer.writerow(self.__column_names)
             csv_writer.writerow(['r', 's', 't', 'a', 'pd'])
-
-
-
         return
 
     def write_row(self, sudoc_record: SuDocRecord):

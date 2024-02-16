@@ -3,7 +3,7 @@ import os
 from PyQt5.QtCore import QThread, pyqtSignal
 from PIL import Image
 from customtkinter import filedialog
-import ocr_lines
+import ocr_lines_new3
 
 
 class HomePage:
@@ -154,6 +154,7 @@ class HomePage:
 
 class OCRHanlder(QThread):
     is_finished = pyqtSignal()
+    single_result_ready = pyqtSignal(str)
     results_ready = pyqtSignal(str)
     progress_percent = pyqtSignal(float)
 
@@ -165,8 +166,8 @@ class OCRHanlder(QThread):
 
     def run(self):
         print("started extraction")
-        results = ocr_lines.read_data(self.directory, self.progress_percent)
-        print(results)
-        self.results_ready.emit(results)
+        result = ocr_lines_new3.read_data(self.directory, self.progress_percent)
+        print(result)
+        self.results_ready.emit(result)
         self.is_finished.emit()
-        return results
+        # return result

@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 # from multiprocessing import cpu_count
 from gc import collect
 
-from scipy.ndimage import maximum_filter
+# from scipy.ndimage import maximum_filter
 from scipy.signal import find_peaks
 
 
@@ -334,7 +334,7 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
                     processor=processor_hw,
                     model=model_hw
                 )
-            ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
+            # ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
             ext_txt = ' '.join(ext_txt.split())
             del cropped_img
             collect()
@@ -365,6 +365,8 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     time_file.write("Model Loading Time: " + str(load_time) + "\n")
     extracted_data = []
     # num_workers = 2 # if cpu_count() > 5 else 1
+    # TODO: rework to be multiprocessing rather than threading
+    #  (threading is synchronous in Python, multiprocessing is asynchronous)
     exe = ThreadPoolExecutor(2)
     start_time = time.time()
     collected_data = []
@@ -378,7 +380,7 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
 
         for obj in range(len(collected_data)):
             extracted_data.append(collected_data[obj].result())
-        if (idx > int(len(img_dir) / 2)) and halfpoint == False:
+        if (idx > int(len(img_dir) / 2)) and not halfpoint:
             halfpoint = True
             write_dataframe(extracted_data,
                             os.path.basename(os.path.normpath("extracted_data/temp_extracted_data.csv")))

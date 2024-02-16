@@ -1,7 +1,5 @@
 import customtkinter
-import gui.home_page
-import gui.settings_page
-import gui.config_page
+from gui import home_page, settings_page, config_page
 from file_handler import FileHandler
 
 
@@ -69,15 +67,15 @@ class App(customtkinter.CTk):
         self.style_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
         # Initialize Home frame
-        self.home = gui.home_page.HomePage(self)
+        self.home = home_page.HomePage(self)
         self.process_folder = "None"
         self.sudoc_file = "None"
 
         # Initialize Settings frame
-        self.settings = gui.settings_page.SettingsPage(self, self.filehandler)
+        self.settings = settings_page.SettingsPage(self, self.filehandler)
 
         # Initialize Configuration frame
-        self.configuration = gui.config_page.ConfigurationPage(self, self.filehandler)
+        self.configuration = config_page.ConfigurationPage(self, self.filehandler)
 
         # Initialize Info frame
         self.info_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
