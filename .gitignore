@@ -5,6 +5,7 @@ secrets
 # Process files
 extractions/*
 extracted_data/*
+*.csv
 
 # Dev Environment Folders
 .idea
