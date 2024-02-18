@@ -368,7 +368,7 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
             collected_data.append(
                 exe.submit(img_recognition, img_dir[(idx + worker)], processor_typed, model_typed, processor_hw,
                            model_hw, writing_classifier,
-                           pipeline, total_images, progress_signal))
+                           detector, total_images, progress_signal))
 
         for obj in range(len(collected_data)):
             extracted_data.append(collected_data[obj].result())
