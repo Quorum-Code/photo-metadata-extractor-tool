@@ -6,7 +6,6 @@ from string import digits, ascii_letters, punctuation
 import math
 import cv2
 import pandas as pd
-import keras_ocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 import pickle
 from concurrent.futures import ThreadPoolExecutor
@@ -16,6 +15,8 @@ from gc import collect
 # from scipy.ndimage import maximum_filter
 from scipy.signal import find_peaks
 
+import keras_ocr_detection
+import keras_ocr_tools
 
 def warn(*args, **kwargs):
     """
@@ -90,23 +91,21 @@ def get_distance(preds):
     detections = []
     x0, y0 = 0, 0
     idx = 0
-    for out in preds:
-        for group in out:
-            top_left_x, top_left_y = group[1][0]
-            bottom_right_x, bottom_right_y = group[1][2]
-            center_x = (top_left_x + bottom_right_x) / 2
-            center_y = (top_left_y + bottom_right_y) / 2
-            dist_from_origin = math.dist([x0, y0], [center_x, center_y])
-            distance_y = center_y - y0
-            detections.append({
-                'text': group[0],
-                'top_left_x': top_left_x,
-                'top_left_y': top_left_y,
-                'bottom_right_x': bottom_right_x,
-                'bottom_right_y': bottom_right_y,
-                'dist_from_origin': dist_from_origin,
-                'distance_y': distance_y})
-            idx = idx + 1
+    for group in preds[0]:
+        top_left_x, top_left_y = group[0]
+        bottom_right_x, bottom_right_y = group[2]
+        center_x = (top_left_x + bottom_right_x) / 2
+        center_y = (top_left_y + bottom_right_y) / 2
+        dist_from_origin = math.dist([x0, y0], [center_x, center_y])
+        distance_y = center_y - y0
+        detections.append({
+            'top_left_x': top_left_x,
+            'top_left_y': top_left_y,
+            'bottom_right_x': bottom_right_x,
+            'bottom_right_y': bottom_right_y,
+            'dist_from_origin': dist_from_origin,
+            'distance_y': distance_y})
+        idx = idx + 1
     return detections
 
 
@@ -230,20 +229,14 @@ def load_models():
     :return: Text detection, text recognition, and classification models
     """
     print("Loading Models")
+
     writing_classifier = pickle.load(open("classifiers/hgbc_model.sav", 'rb'))
     # writing_classifier = pickle.load(open("classifiers/text_classifier.sav", 'rb'))
-    data_dir = '.'
-    alphabet = digits + ascii_letters + "./-(),#:"
-    recognizer_alphabet = ''.join(sorted(set(alphabet.lower())))
+
     print("Loading keras_ocr models")
-    detector = keras_ocr.detection.Detector(weights='clovaai_general')
-    recognizer = keras_ocr.recognition.Recognizer(
-        alphabet=recognizer_alphabet
-    )
-    recognizer.compile()
-    recognizer.model.load_weights('classifiers/curr_recognizer.h5')
+    detector = keras_ocr_detection.detection.Detector(weights='clovaai_general')
+
     # recognizer.model.load_weights('MLModelsList/curr_recognizer.h5')
-    pipeline = keras_ocr.pipeline.Pipeline(detector=detector, recognizer=recognizer)
     print("Loading trocr models")
     processor_typed = TrOCRProcessor.from_pretrained('./MLModelsList/ocr_models/typed_ocr_models')
     model_typed = VisionEncoderDecoderModel.from_pretrained(
@@ -254,7 +247,7 @@ def load_models():
         './MLModelsList/ocr_models/hw_ocr_models'
     ).to(device)
     print("Successfully Loaded Models")
-    return processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline
+    return processor_typed, model_typed, processor_hw, model_hw, writing_classifier, detector
 
 
 def text_feature_extractor(value):
@@ -280,7 +273,7 @@ img_read_flag = True
 
 
 def img_recognition(img_path, processor_typed, model_typed, processor_hw,
-                    model_hw, writing_classifier, pipeline, total_images, progress_signal):
+                    model_hw, writing_classifier, detector, total_images, progress_signal):
     """
     Function to perform the bulk of the text recognition tasks
 
@@ -302,10 +295,9 @@ def img_recognition(img_path, processor_typed, model_typed, processor_hw,
     while img_read_flag == False:
         pass
     img_read_flag = False
-    img = keras_ocr.tools.read(img_path)
-    pred = pipeline.recognize([img])
+    img = keras_ocr_tools.read(img_path)
+    pred = detector.detect([img_path])
     img_read_flag = True
-    del pipeline
     collect()
     pred = get_distance(pred)
     pred = list(distinguish_rows(pred))
@@ -358,7 +350,7 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
     """
 
     start_time = time.time()
-    processor_typed, model_typed, processor_hw, model_hw, writing_classifier, pipeline = load_models()
+    processor_typed, model_typed, processor_hw, model_hw, writing_classifier, detector = load_models()
     load_time = time.time() - start_time
     time_file = open('ml_pipeline_timings.txt', 'a')
     time_file.write("Total images: " + str(len(img_dir)) + "\n")
@@ -376,7 +368,7 @@ def par_img_proc_caller(img_dir, progress_signal, total_images):
             collected_data.append(
                 exe.submit(img_recognition, img_dir[(idx + worker)], processor_typed, model_typed, processor_hw,
                            model_hw, writing_classifier,
-                           pipeline, total_images, progress_signal))
+                           detector, total_images, progress_signal))
 
         for obj in range(len(collected_data)):
             extracted_data.append(collected_data[obj].result())

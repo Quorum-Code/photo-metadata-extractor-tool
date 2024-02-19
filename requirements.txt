@@ -8,7 +8,7 @@ qdarkstyle~=3.2
 Pillow~=10.1.0
 
 # MLM
-numpy~=1.25.2
+numpy
 opencv-python~=4.7.0.72
 pandas~=1.3.5
 transformers~=4.33.1
