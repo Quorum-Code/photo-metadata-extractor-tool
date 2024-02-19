@@ -9,37 +9,46 @@ TIME_FORMAT = "%m-%d-%Y_%H.%M.%S"
 DELIMITER = "|"
 FILE_SUFFIX = ".csv"
 
-COL_NAMES = ["SuDoc", "FilteredSuDoc", "Title", "Author", "PublicationDate"]
+COL_NAMES = ["SuDoc", "FilteredSuDoc", "Title", "Author", "PublicationDate", "ImagePath"]
+
 
 def generate_filename() -> str:
     return FILE_PREFIX + time.strftime(TIME_FORMAT, time.localtime()) + FILE_SUFFIX
 
 
 class SuDocRecord:
-    def __init__(self, raw_sudoc, sudoc, title, author):
-        self.raw_sudoc = raw_sudoc
+    def __init__(self, sudoc, filtered_sudoc, title, author, publication_date, image_path):
         self.sudoc = sudoc
+        self.filtered_sudoc = filtered_sudoc
         self.title = title
         self.author = author
-        return
+        self.publication_date = publication_date
+        self.image_path = image_path
 
-    def get_fields(self):
-        return {self.raw_sudoc, self.sudoc, self.title, self.author}
+    def get_dict(self) -> dict[str]:
+        record_dict = {COL_NAMES[0]: f"{self.sudoc}",
+                       COL_NAMES[1]: f"{self.filtered_sudoc}",
+                       COL_NAMES[2]: f"{self.title}",
+                       COL_NAMES[3]: f"{self.author}",
+                       COL_NAMES[4]: f"{self.publication_date}",
+                       COL_NAMES[5]: f"{self.image_path}"}
+        return record_dict
 
 
 class CSVDocument:
-    def __init__(self, data_handler: fh.FileHandler, folder_path="", file_name=""):
+    def __init__(self, data_handler: fh.FileHandler, folder_path="", file_name="", file_path=""):
         self.__datahandler = data_handler
         self.__file_contents: [dict] = []
+        self.__file_rows: list[SuDocRecord] = []
         self.__file_name = file_name
-        self.__file_path = ""
+        self.__file_path = file_path
         self.__folder_path = folder_path
         if self.__folder_path == "":
             self.__folder_path = os.path.join(self.__datahandler.get_program_path(), FOLDER_NAME)
             print(self.__folder_path)
 
         # Try Load filename
-        if self.__file_name != "":
+        if self.__file_path == "" and self.__file_name != "":
             # Check that file exists
             self.__file_path = os.path.join(self.__folder_path, self.__file_name)
             if not os.path.exists(self.__file_path):
@@ -47,7 +56,7 @@ class CSVDocument:
                 self.__file_name = ""
 
         # Generate filename
-        if self.__file_name == "":
+        if self.__file_path == "" and self.__file_name == "":
             self.__file_name = generate_filename()
             self.__file_path = os.path.join(self.__folder_path, self.__file_name)
             open(self.__file_path, 'w')
@@ -118,6 +127,14 @@ class CSVDocument:
         self.__file_contents.append(row)
         self.__write_contents()
 
+    def get_all_sudocs(self) -> list[str]:
+        sudocs = []
+
+        for row in self.__file_contents:
+            sudocs.append(row["SuDoc"])
+
+        return sudocs
+
     def __write_contents(self):
         with open(self.__file_path, mode='w', newline='') as file:
             csv_writer = csv.DictWriter(file, delimiter=DELIMITER, fieldnames=COL_NAMES)
@@ -142,8 +159,9 @@ class CSVDocument:
 
 if __name__ == "__main__":
     start_time = time.time()
-    csvfile = CSVDocument(fh.FileHandler(), file_name="extraction_02-17-2024_14.51.14.csv")
-    csvfile.add_row({"SuDoc": "su", "FilteredSuDoc": "fs", "Title": "ti", "Author": "au", "PublicationDate": "pd"})
+    csvfile = CSVDocument(fh.FileHandler(), file_name="extraction_02-18-2024_13.46.13.csv")
+    # csvfile.add_row({"SuDoc": "su", "FilteredSuDoc": "fs", "Title": "ti", "Author": "au", "PublicationDate": "pd", "ImagePath": ""})
+    print(csvfile.get_all_sudocs())
     end_time = time.time()
 
     print(f"Total time: {end_time - start_time}")

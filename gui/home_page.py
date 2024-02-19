@@ -4,14 +4,17 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PIL import Image
 from customtkinter import filedialog
 import ocr_lines_new3
+from oclc.oclc_api import OCLCSession
+from file_handler import FileHandler
 
 
 class HomePage:
-    def __init__(self, parent):
+    def __init__(self, parent, file_handler: FileHandler):
         self.__parent = parent
+        self.__file_handler = file_handler
         self.__file_character_limit = 40
         self.__photo_folder = "no folder selected"
-        self.__sudoc_file = "no file selected"
+        self.__sudoc_csv = "no file selected"
         self.__file_icon_local_path = "icons\\folder-icon.png"
 
         # Reference to QThread must be stored or will be destroyed by garbage collector
@@ -86,7 +89,7 @@ class HomePage:
                                                                 command=self.ask_sudoc_file)
         self.select_sudoc_file_button.grid(row=0, column=1, padx=10, pady=10)
 
-        self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text=self.__sudoc_file, anchor="w",
+        self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text=self.__sudoc_csv, anchor="w",
                                                       width=300)
         self.sudoc_file_name.grid(row=0, column=2, padx=10, pady=10)
 
@@ -105,7 +108,7 @@ class HomePage:
         self.query_progress_bar.grid(row=1, column=0, padx=10)
 
         self.process_photo_button = customtkinter.CTkButton(self.query_frame, text="Process Queries",
-                                                            command=None)
+                                                            command=self.start_queries)
         self.process_photo_button.grid(row=2, column=0, padx=10, pady=20)
 
     def ask_photo_folder(self):
@@ -119,8 +122,8 @@ class HomePage:
         selected_file = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
 
         if selected_file != "":
-            self.__sudoc_file = selected_file
-            self.sudoc_file_name.configure(text=self._trim_filename(self.__sudoc_file))
+            self.__sudoc_csv = selected_file
+            self.sudoc_file_name.configure(text=self._trim_filename(self.__sudoc_csv))
 
     def _trim_filename(self, filename: str) -> str:
         if len(filename) > self.__file_character_limit:
@@ -140,6 +143,24 @@ class HomePage:
         self.__thread_object.start()
 
         print("finished initializing extractor")
+        return
+
+    def start_queries(self):
+        # Start OCLC session
+        oclc = OCLCSession(self.__file_handler)
+        if oclc.ready_session():
+            print("Authorized")
+        else:
+            print("NOT Authorized")
+
+        # Pass CSV filepath to OCLC session object
+        if oclc.query_csv_sudoc(self.__sudoc_csv):
+            print("Succeeded querying csv sudoc")
+        else:
+            print("FAILED")
+
+        print(f"SuDoc csv: {self.__sudoc_csv}")
+
         return
 
     def __debug_is_finished(self):
@@ -170,4 +191,4 @@ class OCRHanlder(QThread):
         print(result)
         self.results_ready.emit(result)
         self.is_finished.emit()
-        # return result
+        # return result/

@@ -75,10 +75,6 @@ class FileHandler:
         self.__init_pmet_data_json()
         self.__init_secrets_file()
 
-        # Read files
-        # self.load_settings()
-        self.load_secrets()
-
         # Load data as dict
         self.__json_data: dict = self.__load_json()
 
@@ -93,9 +89,6 @@ class FileHandler:
         if "program_path" in self.__json_data["settings"].keys() and self.__json_data["settings"]["program_path"] != "":
             return self.__json_data["settings"]["program_path"]
         return None
-
-    def test_print(self, text):
-        print(f"File handler function called with: {text}")
 
     def load_settings(self):
         try:
@@ -148,8 +141,11 @@ class FileHandler:
     def get_configuration(self) -> dict:
         return self.__json_data["configuration"]
 
-    def get_secrets(self) -> dict:
-        pass
+    def get_secrets(self) -> [str, str]:
+        return self.__secrets["client_id"], self.__secrets["client_secret"]
+
+    def get_token_url(self) -> str:
+        return self.__json_data["configuration"]["token"]["url"]
 
     # todo: find best practice for copying dictionaries from an object
     def get_token_headers(self) -> dict:
@@ -157,6 +153,9 @@ class FileHandler:
 
     def get_token_body(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["token"]["body"])
+
+    def get_query_url(self) -> str:
+        return self.__json_data["configuration"]["query"]["url"]
 
     def get_query_headers(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["query"]["headers"])
@@ -194,8 +193,6 @@ class FileHandler:
     def set_secrets(self, client_id: str, client_secret: str):
         self.__save_secrets(client_id, client_secret)
         self.__secrets = self.__load_secrets()
-
-        print(f"Secrets! {self.__secrets}")
 
     def load_default_config(self):
         self.__json_data["configuration"] = DEFAULT_CONFIGURATION
@@ -275,8 +272,6 @@ class FileHandler:
         if "program_path" not in json_data["settings"].keys() or json_data["settings"]["program_path"] == "":
             print("No program path")
             self.__init_program_path(json_data)
-        else:
-            print("has program path")
 
         return json_data
 

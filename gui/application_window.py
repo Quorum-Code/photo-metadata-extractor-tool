@@ -67,7 +67,7 @@ class App(customtkinter.CTk):
         self.style_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
         # Initialize Home frame
-        self.home = home_page.HomePage(self)
+        self.home = home_page.HomePage(self, self.filehandler)
         self.process_folder = "None"
         self.sudoc_file = "None"
 

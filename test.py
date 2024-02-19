@@ -1,5 +1,5 @@
-import csv
-import pandas
+import string
+import time
 
 # with open("some.csv", mode='r') as file:
 #     csvFile = csv.DictReader(file, delimiter='|')
@@ -13,9 +13,25 @@ import pandas
 #
 # csvFile.to_csv("some.csv", sep="|")
 
-COL_NAMES = ["alpha", "beta"]
+# COL_NAMES = ["alpha", "beta"]
+#
+# with open("some.csv", mode='a', newline='') as file:
+#     csvFile = csv.DictWriter(file, delimiter='|', fieldnames=COL_NAMES)
+#
+#     csvFile.writerows([{"alpha": "amazing", "beta": "bravo"}, {"alpha": "amazing", "beta": "bravo"}])
 
-with open("some.csv", mode='a', newline='') as file:
-    csvFile = csv.DictWriter(file, delimiter='|', fieldnames=COL_NAMES)
+start = time.time()
 
-    csvFile.writerows([{"alpha": "amazing", "beta": "bravo"}, {"alpha": "amazing", "beta": "bravo"}])
+thing = "This,  a thing, is a sentence with... puncuation!?"
+
+print(thing)
+
+whitespace_translator = str.maketrans("", "", string.whitespace)
+punctuation_translator = str.maketrans("", "", string.punctuation)
+
+thing = thing.translate(whitespace_translator).translate(punctuation_translator)
+
+print(thing)
+
+end = time.time()
+print(end-start)
