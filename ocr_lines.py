@@ -260,7 +260,7 @@ def __load_models():
     :return: Text detection, text recognition, and classification models
     """
     print("Loading Models")
-    # writing_classifier = pickle.load(open("classifiers/hgbc_model.sav", 'rb'))
+    # writing_classifier = pickle.load(open("classifiers/writing_hgbc_model.sav", 'rb'))
     writing_classifier = pickle.load(open("classifiers/text_classifier.sav", 'rb'))
     data_dir = '.'
     alphabet = digits + ascii_letters + "./-(),#:"
