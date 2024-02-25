@@ -4,11 +4,7 @@ from gui.page import Page
 
 class GettingStartedPage(Page):
     def __init__(self, parent: customtkinter.CTk):
-        super().__init__(parent)
-
-        # TITLE
-        self.__title_text = customtkinter.CTkLabel(self.frame, text="Getting Started", font=self.title_font)
-        self._insert_widget(self.__title_text)
+        super().__init__(parent, "Getting Started")
 
         # EXTRACTION
         self.__extraction_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")

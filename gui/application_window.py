@@ -119,9 +119,9 @@ class App(customtkinter.CTk):
             self.__getting_started.frame.grid_forget()
 
         if name == "extraction":
-            self.__extraction_page.home_frame.grid(row=0, column=1, sticky="nsew")
+            self.__extraction_page.frame.grid(row=0, column=1, sticky="nsew")
         else:
-            self.__extraction_page.home_frame.grid_forget()
+            self.__extraction_page.frame.grid_forget()
 
         if name == "settings":
             self.settings.settings_frame.grid(row=0, column=1, sticky="nsew")
