@@ -124,9 +124,9 @@ class App(customtkinter.CTk):
             self.__extraction_page.frame.grid_forget()
 
         if name == "settings":
-            self.settings.settings_frame.grid(row=0, column=1, sticky="nsew")
+            self.settings.frame.grid(row=0, column=1, sticky="nsew")
         else:
-            self.settings.settings_frame.grid_forget()
+            self.settings.frame.grid_forget()
 
         if name == "configuration":
             self.configuration.configuration_frame.grid(row=0, column=1, sticky="nsew")
