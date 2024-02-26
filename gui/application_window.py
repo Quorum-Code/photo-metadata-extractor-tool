@@ -37,40 +37,40 @@ class App(customtkinter.CTk):
         self.__getting_started_button.grid(row=0, column=0, sticky="ew")
 
         # - Extraction
-        self.home_button = customtkinter.CTkButton(self.navigation_frame,
-                                                   corner_radius=0,
-                                                   height=40,
-                                                   border_spacing=10,
-                                                   text="Extraction",
-                                                   fg_color="transparent",
-                                                   text_color=("gray10", "gray90"),
-                                                   anchor="w",
-                                                   command=self.__extraction_button_event)
-        self.home_button.grid(row=1, column=0, sticky="ew")
+        self.__extraction_button = customtkinter.CTkButton(self.navigation_frame,
+                                                           corner_radius=0,
+                                                           height=40,
+                                                           border_spacing=10,
+                                                           text="Extraction",
+                                                           fg_color="transparent",
+                                                           text_color=("gray10", "gray90"),
+                                                           anchor="w",
+                                                           command=self.__extraction_button_event)
+        self.__extraction_button.grid(row=1, column=0, sticky="ew")
 
         # - Settings
-        self.settings_button = customtkinter.CTkButton(self.navigation_frame,
-                                                       corner_radius=0,
-                                                       height=40,
-                                                       border_spacing=10,
-                                                       text="Settings",
-                                                       fg_color="transparent",
-                                                       text_color=("gray10", "gray90"),
-                                                       anchor="w",
-                                                       command=self.settings_button_event)
-        self.settings_button.grid(row=2, column=0, sticky="ew")
+        self.__settings_button = customtkinter.CTkButton(self.navigation_frame,
+                                                         corner_radius=0,
+                                                         height=40,
+                                                         border_spacing=10,
+                                                         text="Settings",
+                                                         fg_color="transparent",
+                                                         text_color=("gray10", "gray90"),
+                                                         anchor="w",
+                                                         command=self.settings_button_event)
+        self.__settings_button.grid(row=2, column=0, sticky="ew")
 
         # - Configuration
-        self.configuration_button = customtkinter.CTkButton(self.navigation_frame,
-                                                            corner_radius=0,
-                                                            height=40,
-                                                            border_spacing=10,
-                                                            text="Configuration",
-                                                            fg_color="transparent",
-                                                            text_color=("gray10", "gray90"),
-                                                            anchor="w",
-                                                            command=self.configuration_button_event)
-        self.configuration_button.grid(row=3, column=0, sticky="ew")
+        self.__configuration_button = customtkinter.CTkButton(self.navigation_frame,
+                                                              corner_radius=0,
+                                                              height=40,
+                                                              border_spacing=10,
+                                                              text="Configuration",
+                                                              fg_color="transparent",
+                                                              text_color=("gray10", "gray90"),
+                                                              anchor="w",
+                                                              command=self.configuration_button_event)
+        self.__configuration_button.grid(row=3, column=0, sticky="ew")
 
         # Style menu
         self.style_menu = customtkinter.CTkOptionMenu(self.navigation_frame,
@@ -105,9 +105,14 @@ class App(customtkinter.CTk):
 
     def select_frame_by_name(self, name: str):
         # Update navigation button colors
-        self.home_button.configure(fg_color=("gray75", "gray25") if name == "home" else "transparent")
-        self.settings_button.configure(fg_color=("gray75", "gray25") if name == "settings" else "transparent")
-        self.configuration_button.configure(fg_color=("gray75", "gray25") if name == "configuration" else "transparent")
+        self.__getting_started_button.configure(
+            fg_color=("gray75", "gray25") if name == "getting_started" else "transparent")
+        self.__extraction_button.configure(
+            fg_color=("gray75", "gray25") if name == "extraction" else "transparent")
+        self.__settings_button.configure(
+            fg_color=("gray75", "gray25") if name == "settings" else "transparent")
+        self.__configuration_button.configure(
+            fg_color=("gray75", "gray25") if name == "configuration" else "transparent")
 
         # Clear focus
         self.focus()
@@ -129,14 +134,9 @@ class App(customtkinter.CTk):
             self.settings.frame.grid_forget()
 
         if name == "configuration":
-            self.configuration.configuration_frame.grid(row=0, column=1, sticky="nsew")
+            self.configuration.frame.grid(row=0, column=1, sticky="nsew")
         else:
-            self.configuration.configuration_frame.grid_forget()
-
-        if name == "info":
-            self.configuration.configuration_frame.grid(row=0, column=1, sticky="nsew")
-        else:
-            self.info_frame.grid_forget()
+            self.configuration.frame.grid_forget()
 
     def __getting_started_button_event(self):
         self.select_frame_by_name("getting_started")
