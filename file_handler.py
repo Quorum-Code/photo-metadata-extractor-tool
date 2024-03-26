@@ -290,8 +290,6 @@ class FileHandler:
         self.__json_data["configuration"] = new_config
 
     def __save_json(self):
-        print("Saving JSON...")
-        print(self.__json_data)
         with open(self.pmet_setting_file_path, "w") as f:
             f.write(json.dumps(self.__json_data, indent=self.__indent))
 
