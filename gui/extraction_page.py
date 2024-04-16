@@ -178,7 +178,7 @@ class ExtractionPage:
         print(f"percent: {percent}")
 
 
-class OCRHanlder(QThread):
+class OCRHandler(QThread):
     is_finished = pyqtSignal()
     single_result_ready = pyqtSignal(str)
     results_ready = pyqtSignal(str)

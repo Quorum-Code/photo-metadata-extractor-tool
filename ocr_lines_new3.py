@@ -15,6 +15,7 @@ from scipy import ndimage as ndi
 from skimage.filters import gabor_kernel
 import ultralytics
 
+
 def warn(*args, **kwargs):
     """
     Warning Suppression
@@ -92,6 +93,7 @@ class ocr():
         """
         self.field_classifier = pickle.load(open("./ml_models/classifiers/text_classifier.sav", 'rb'))
 
+
 def dir_validation(dir):
     """
     Function to check if the passed directory has the right format
@@ -100,7 +102,7 @@ def dir_validation(dir):
     :return: error code
     """
 
-    supported_file_types = [ 'bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
+    supported_file_types = ['bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
                             'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
                             'exr', 'hdr', 'pic'
                             ]
@@ -111,6 +113,7 @@ def dir_validation(dir):
         if ext not in supported_file_types:
             return 202
     return 200
+
 
 def hconcat_resize(img_list, interpolation=cv2.INTER_CUBIC):
     """
@@ -176,7 +179,7 @@ def img_recognition(img_dir, total_images, progress_signal):
             image_crops = []
             crop_labels = []
             for row in group:
-                row = sorted(row, key=lambda x:x['distance_x'])
+                row = sorted(row, key=lambda x: x['distance_x'])
                 for box in row:
                     uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0
                     lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0
@@ -193,7 +196,7 @@ def img_recognition(img_dir, total_images, progress_signal):
                     crop_labels.append(text_classification(cropped_img))
             label = most_frequent(crop_labels)
             cropped_img = hconcat_resize(image_crops)
-            if label in [ 'typed', 'cover' ]:
+            if label in ['typed', 'cover']:
                 ext_txt = ext_txt + " " + text_recognition(
                     cropped_img,
                     label
@@ -203,13 +206,14 @@ def img_recognition(img_dir, total_images, progress_signal):
                     cropped_img,
                     label
                 )
-                    # ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
-                    #ext_txt = ' '.join(ext_txt.split())
+                # ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
+                # ext_txt = ' '.join(ext_txt.split())
         extractions[img_path] = ext_txt + " "
         print("Completed extraction on image: ", img_path)
         count += 1
         progress_signal.emit(count / total_images)
     return extractions
+
 
 def text_recognition(image, label):
     """
@@ -220,7 +224,7 @@ def text_recognition(image, label):
     :return: The extracted text.
     """
 
-    if label in [ 'typed', 'cover' ]:
+    if label in ['typed', 'cover']:
         pixel_values = ocr_obj.processor_typed(image, return_tensors='pt').pixel_values.to(device)
         generated_ids = ocr_obj.model_typed.generate(pixel_values)
         generated_text = ocr_obj.processor_typed.batch_decode(generated_ids, skip_special_tokens=True)[0]
@@ -231,6 +235,7 @@ def text_recognition(image, label):
 
     return generated_text
 
+
 def text_detection(img):
     """
     Calls detector model to perform text detection on the passed image
@@ -239,9 +244,10 @@ def text_detection(img):
     :return: List of boxes for the detected text
     """
 
-    results = ocr_obj.detector.predict(source = img, imgsz=384, conf = .07,
-                       iou = .12, augment = True, max_det = 1000)
+    results = ocr_obj.detector.predict(source=img, imgsz=384, conf=.07,
+                                       iou=.12, augment=True, max_det=1000)
     return [box.numpy().boxes.xyxy.tolist() for box in results]
+
 
 def distinguish_groups(lst):
     """
@@ -262,13 +268,14 @@ def distinguish_groups(lst):
                 if added == True:
                     break
                 if abs(sublists[j][k]['dist_from_origin'] - lst[i]['dist_from_origin']) <= \
-                      (sublists[j][k]['height'] + lst[i]['height']) / 2:
+                        (sublists[j][k]['height'] + lst[i]['height']) / 2:
                     sublists[j].append(lst[i])
                     added = True
 
         if added == False:
             sublists.append([lst[i]])
     return sublists
+
 
 def distinguish_rows(lst):
     """
@@ -281,18 +288,19 @@ def distinguish_rows(lst):
     sublists = []
     if len(lst) == 1:
         sublists.append(lst[0])
-    for i in range(0, len(lst)-1):
-        if abs(lst[i+1]['distance_y'] - lst[i]['distance_y']) <=  \
-           (lst[i]['height'] + lst[i+1]['height']) / 4:
+    for i in range(0, len(lst) - 1):
+        if abs(lst[i + 1]['distance_y'] - lst[i]['distance_y']) <= \
+                (lst[i]['height'] + lst[i + 1]['height']) / 4:
             if lst[i] not in sublists:
                 sublists.append(lst[i])
-            sublists.append(lst[i+1])
+            sublists.append(lst[i + 1])
         else:
             if i == 0:
                 sublists.append(lst[i])
             yield sublists
-            sublists = [lst[i+1]]
+            sublists = [lst[i + 1]]
     yield sublists
+
 
 def get_distance(preds):
     """
@@ -309,9 +317,9 @@ def get_distance(preds):
         top_left_y = group[1]
         bottom_right_x = group[2]
         bottom_right_y = group[3]
-        center_x = (top_left_x + bottom_right_x)/2
-        center_y = (top_left_y + bottom_right_y)/2
-        dist_from_origin = math.dist([x0,y0], [.2*center_x, 1.8*center_y])
+        center_x = (top_left_x + bottom_right_x) / 2
+        center_y = (top_left_y + bottom_right_y) / 2
+        dist_from_origin = math.dist([x0, y0], [.2 * center_x, 1.8 * center_y])
         distance_y = center_y - y0
         distance_x = center_x - x0
         height = abs(top_left_y - bottom_right_y)
@@ -324,9 +332,10 @@ def get_distance(preds):
             'distance_y': distance_y,
             'distance_x': distance_x,
             'height': height
-            })
+        })
         idx = idx + 1
     return detections
+
 
 def longestZeroSeqLength(a):
     """
@@ -341,7 +350,8 @@ def longestZeroSeqLength(a):
     if rng.size == 0:
         return 0
     rng = rng.reshape(-1, 2)
-    return np.subtract(rng[:,1], rng[:,0]).max()
+    return np.subtract(rng[:, 1], rng[:, 0]).max()
+
 
 def get_gray_img_features(img_num, th):
     """
@@ -364,15 +374,15 @@ def get_gray_img_features(img_num, th):
     log_transformed_std = log_transformed.std()
     max_int = img_num.max()
     min_int = img_num.min()
-    quart_range = (max_int - min_int)/4
+    quart_range = (max_int - min_int) / 4
     upper_quart_count = np.count_nonzero(img_num >= (max_int - quart_range))
-    upper_quart_perc = (upper_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1)*100
+    upper_quart_perc = (upper_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1) * 100
     lower_quart_count = np.count_nonzero(img_num <= (min_int + quart_range))
-    lower_quart_perc = (lower_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1)*100
+    lower_quart_perc = (lower_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1) * 100
 
     return [log_transformed_mean, th, maxima_count,
             upper_quart_perc, lower_quart_perc,
-            log_transformed_std, log_transformed_var ]
+            log_transformed_std, log_transformed_var]
 
 
 def get_gabor_features(img_num):
@@ -398,6 +408,7 @@ def get_gabor_features(img_num):
 
     return out_list_var
 
+
 def get_horizontal_projection_features(th_img):
     """
     Function to collect horizontal projection features for handwritten/printed text classification
@@ -410,16 +421,16 @@ def get_horizontal_projection_features(th_img):
 
     for row in th_img:
         run_lengths.append(longestZeroSeqLength(row))
-        swap_counts.append((np.diff(row)!=0).sum())
+        swap_counts.append((np.diff(row) != 0).sum())
 
-    hist, bin_edges = np.histogram(run_lengths, bins=100, density = True)
+    hist, bin_edges = np.histogram(run_lengths, bins=100, density=True)
     max_run = hist.argmax()
     row_max_run_count = hist[max_run]
     normed_row_max = bin_edges[max_run]
     row_hist_mean = hist.mean()
     row_hist_var = hist.var()
     row_hist_std = hist.std()
-    hist, bin_edges = np.histogram(swap_counts, bins=100, density = True)
+    hist, bin_edges = np.histogram(swap_counts, bins=100, density=True)
     max_run = hist.argmax()
     sc_row_max_run_count = hist[max_run]
     normed_sc_row_max = bin_edges[max_run]
@@ -428,7 +439,8 @@ def get_horizontal_projection_features(th_img):
     sc_row_hist_std = hist.std()
 
     return row_max_run_count, normed_row_max, row_hist_mean, row_hist_var, row_hist_std, \
-           sc_row_max_run_count, normed_sc_row_max, sc_row_hist_mean, sc_row_hist_var, sc_row_hist_std
+        sc_row_max_run_count, normed_sc_row_max, sc_row_hist_mean, sc_row_hist_var, sc_row_hist_std
+
 
 def get_vertical_projection_features(th_img):
     """
@@ -442,9 +454,9 @@ def get_vertical_projection_features(th_img):
     run_lengths = []
     for col in th_img.T:
         run_lengths.append(longestZeroSeqLength(col))
-        swap_counts.append((np.diff(col)!=0).sum())
+        swap_counts.append((np.diff(col) != 0).sum())
 
-    hist, bin_edges = np.histogram(run_lengths, bins=100, density = True)
+    hist, bin_edges = np.histogram(run_lengths, bins=100, density=True)
 
     max_run = hist.argmax()
 
@@ -454,7 +466,7 @@ def get_vertical_projection_features(th_img):
     col_hist_var = hist.var()
     col_hist_std = hist.std()
 
-    hist, bin_edges = np.histogram(swap_counts, bins=100, density = True)
+    hist, bin_edges = np.histogram(swap_counts, bins=100, density=True)
 
     max_run = hist.argmax()
 
@@ -466,7 +478,7 @@ def get_vertical_projection_features(th_img):
     sc_col_hist_std = hist.std()
 
     return col_max_run_count, normed_col_max, col_hist_mean, col_hist_var, col_hist_std, \
-           sc_col_max_run_count, normed_sc_col_max, sc_col_hist_mean, sc_col_hist_var, sc_col_hist_std
+        sc_col_max_run_count, normed_sc_col_max, sc_col_hist_mean, sc_col_hist_var, sc_col_hist_std
 
 
 def get_315_deg_projection_features(th_img):
@@ -652,6 +664,7 @@ def text_classification(img):
 
     return label
 
+
 def text_feature_extractor(value):
     """
     Function to take measurements from a text string for classification purposes
@@ -666,12 +679,13 @@ def text_feature_extractor(value):
     if text_length == 0:
         num_text_ratio = 0
     else:
-        num_text_ratio = numbers/text_length
+        num_text_ratio = numbers / text_length
     avg_word_length = sum(len(word) for word in value) / words
-    ext_features = np.reshape(  [text_length, words,
-                                    num_text_ratio, avg_word_length] , (1, -1))
+    ext_features = np.reshape([text_length, words,
+                               num_text_ratio, avg_word_length], (1, -1))
     field = ocr_obj.field_classifier.predict(ext_features)
     return field[0]
+
 
 def pub_year_extraction(data):
     """
@@ -686,6 +700,7 @@ def pub_year_extraction(data):
         if phrase.isdigit() and (1600 <= int(phrase) <= datetime.datetime.today().year + 1):
             pub_year = phrase
     return pub_year
+
 
 def merge_dicts(data):
     """
@@ -716,14 +731,14 @@ def write_dataframe(data, label):
     os.makedirs(init_datapath, exist_ok=True)
     data = merge_dicts(data)
     output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year',
-                                        'Path','Error Code','Query Status',
+                                        'Path', 'Error Code', 'Query Status',
                                         'Sudoc Image', 'Title Image',
                                         'Image 1 Path', 'Image 2 Path',
-                                        'Image 1 Ext', 'Image 2 Ext',])
+                                        'Image 1 Ext', 'Image 2 Ext', ])
     title_key = sudoc_key = text_type_1_val = text_type_2_val \
-              = text_type_1_key = text_type_2_key = pub_year \
-              = img_1_pth = img_1_ext  \
-              = img_2_pth = img_2_ext = ""
+        = text_type_1_key = text_type_2_key = pub_year \
+        = img_1_pth = img_1_ext \
+        = img_2_pth = img_2_ext = ""
     for idx, key in enumerate(data):
         text_type = text_feature_extractor(data[key], ocr_obj)
         if text_type == 'title':
@@ -741,8 +756,8 @@ def write_dataframe(data, label):
         if (idx % 2) == 1:
             output_data = pd.concat([output_data, pd.DataFrame(
                 [{'ID': int((idx - 1) / 2),
-                   text_type_1_key: text_type_1_val,
-                   text_type_2_key: text_type_2_val,
+                  text_type_1_key: text_type_1_val,
+                  text_type_2_key: text_type_2_val,
                   'Publication Year': pub_year,
                   'Sudoc Image': sudoc_key,
                   'Title Image': title_key,
@@ -751,7 +766,7 @@ def write_dataframe(data, label):
                   'Image 1 Ext': img_1_ext,
                   'Image 2 Ext': img_2_ext,
                   }])],
-                ignore_index=True)
+                                    ignore_index=True)
         else:
             img_1_pth = key
             img_1_ext = data[key]
@@ -765,6 +780,7 @@ def write_dataframe(data, label):
     output_data.to_csv(datapath, index=False, mode="a")
     print("Completed Writing Step")
     return datapath
+
 
 def main(path, progress_signal):
     """
@@ -800,7 +816,7 @@ def main(path, progress_signal):
     total_images = len(img_dir)
     start_time = time.time()
     with multiprocessing.Pool(processes=2) as pool:
-        hp = total_images//2
+        hp = total_images // 2
         collected_data_proc_1.append(pool.apply_async(img_recognition, (img_dir[:hp],)))
         collected_data_proc_2.append(pool.apply_async(img_recognition, (img_dir[hp:],)))
         for obj in range(len(collected_data_proc_1)):
@@ -821,6 +837,7 @@ def main(path, progress_signal):
     print("finished image reading lines")
 
     return (datapath)
+
 
 if multiprocessing.current_process().name != 'MainProcess':
     start_time = time.time()
