@@ -1,4 +1,4 @@
-# photo-metadata-extractor-tool
+# photo-metadata-extractor-tool (PMET)
 > Tool to speed up data entry of documents using the SuDoc numbering scheme
 
 ## Installing PMET on Windows
