@@ -6,6 +6,7 @@ secrets
 extractions/*
 extracted_data/*
 *.csv
+ml_pipeline_timings.txt
 
 # Dev Environment Folders
 .idea
