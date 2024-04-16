@@ -3,7 +3,7 @@
 
 ## Installing PMET on Windows
 
-1. Install Python 3.10 or newer.
+1. Install [Python 3.10](https://www.python.org/downloads/) or newer.
 2. Clone or download the repository.
 3. Open the command line at the project and run `pip install -r requirements.txt`.
 4. Download [ocr_models](https://drive.google.com/drive/folders/1aVnQa8RhbWujhjkp-LcivGucdrFSTn4b?usp=sharing).
