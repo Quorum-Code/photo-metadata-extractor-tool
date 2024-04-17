@@ -143,7 +143,7 @@ class ExtractionPage:
             CTkMessagebox(title="ERROR", message="Please select a valid file.", icon="cancel")
             return
 
-        self.__thread_object = OCRHanlder()
+        self.__thread_object = OCRHandler()
         self.__thread_object.directory = self.__photo_folder
         self.__thread_object.is_finished.connect(self.__debug_is_finished)
         self.__thread_object.results_ready.connect(self.__debug_result_ready)

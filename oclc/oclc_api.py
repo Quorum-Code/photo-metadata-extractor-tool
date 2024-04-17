@@ -18,7 +18,7 @@ class OCLCSession:
         self.__token_url = self.__file_handler.get_token_url()
         self.__token_headers = self.__file_handler.get_token_headers()
         self.__token_body = self.__file_handler.get_token_body()
-        self.__token: str | None = None
+        self.__token: str = ""
         self.__signature = self.__get_signature()
         self.__query_url = self.__file_handler.get_query_url()
         self.__query_headers = self.__file_handler.get_query_headers()
@@ -84,15 +84,19 @@ class OCLCSession:
 
         # get list of sudocs
         sudocs = csv_doc.get_all_sudocs()
+        for sudoc in sudocs:
+            print("a_sudoc: " + sudoc)
 
         # filter sudocs
         filtered_sudocs = self.__filter_sudocs(sudocs)
 
-        # iterate through list of sudos
+        # iterate through list of sudocs
         for sudoc in filtered_sudocs:
+            print("Querying: " + sudoc)
+
             # query filtered sudoc
             self.__query_parameters['q'] = f"gn:{sudoc}"
-            query_request = requests.Request("GET",
+            query_request = requests.Request(method="GET",
                                              url=self.__query_url,
                                              headers=self.__query_headers,
                                              params=self.__query_parameters)
