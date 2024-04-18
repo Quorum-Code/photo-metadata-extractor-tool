@@ -98,8 +98,9 @@ class OCLCSession:
 
         # iterate through list of sudocs
         for i in range(len(filtered_sudocs)):
-            text = self.__query_sudoc(filtered_sudocs[i])
-            self.__add_sudoc_record(doc, sudocs[i], text)
+            if i > 0:
+                text = self.__query_sudoc(filtered_sudocs[i])
+                self.__add_sudoc_record(doc, sudocs[i], text)
         doc.write_contents_to_file()
 
             # if result found: update csv with results
@@ -113,8 +114,14 @@ class OCLCSession:
 
         j = json.loads(json_text)
 
+        print("made it here")
+
         if "numberOfRecords" not in j:
-            doc.add_row(SuDocRecord(raw_sudoc, "0 records found", "", "", "", "", "").get_dict())
+            doc.add_row(SuDocRecord(raw_sudoc, "no response", "", "", "", "", "").get_dict())
+            return
+
+        if j["numberOfRecords"] <= 0:
+            doc.add_row(SuDocRecord(raw_sudoc, "no records found", "", "", "", "", "").get_dict())
             return
 
         n_records = j["numberOfRecords"]
@@ -127,6 +134,9 @@ class OCLCSession:
 
         for i in range(n_records):
             doc.add_row(self.__bib_record_to_sudoc_record(raw_sudoc, status, j["bibRecords"][i]).get_dict())
+
+        print("n_records type: ", type(n_records))
+        print(n_records)
 
     def __bib_record_to_sudoc_record(self, raw_sudoc: str, status: str, bib: dict) -> SuDocRecord:
         filtered_sudoc = ""
@@ -152,9 +162,7 @@ class OCLCSession:
         with requests.Session() as session:
             response = session.send(query_prepped)
 
-        if response:
-            return response.text
-        return ""
+        return response.text
 
     def __filter_sudocs(self, sudocs: list[str]) -> list[str]:
         filtered_sudocs = []
