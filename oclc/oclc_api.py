@@ -4,7 +4,7 @@ import base64
 import configparser
 import string
 from file_handler import FileHandler
-from csv_handler import CSVDocument
+from csv_handler import CSVDocument, SuDocRecord
 
 
 class OCLCSession:
@@ -18,7 +18,7 @@ class OCLCSession:
         self.__token_url = self.__file_handler.get_token_url()
         self.__token_headers = self.__file_handler.get_token_headers()
         self.__token_body = self.__file_handler.get_token_body()
-        self.__token: str | None = None
+        self.__token: str = ""
         self.__signature = self.__get_signature()
         self.__query_url = self.__file_handler.get_query_url()
         self.__query_headers = self.__file_handler.get_query_headers()
@@ -60,6 +60,8 @@ class OCLCSession:
         token_request = requests.Request("POST", url=self.__token_url,
                                          data=self.__token_body, headers=self.__token_headers)
         token_request_prepped = token_request.prepare()
+        print(self.__token_headers)
+        print(self.__token_body)
 
         # Send request
         with requests.Session() as session:
@@ -74,46 +76,93 @@ class OCLCSession:
                 self.__query_headers["Authorization"] = f"Bearer {self.__token}"
                 return True
             else:
+                print("no access token in response")
                 return False
         else:
+            print("no response")
             return False
 
     def query_csv_sudoc(self, csv_file_path: str) -> bool:
         # Create csv object
-        csv_doc = CSVDocument(self.__file_handler, file_path=csv_file_path)
+        csv_doc = CSVDocument(self.__file_handler, file_path=csv_file_path, read_only=True)
 
         # get list of sudocs
         sudocs = csv_doc.get_all_sudocs()
+        for sudoc in sudocs:
+            print("a_sudoc: " + sudoc)
 
         # filter sudocs
         filtered_sudocs = self.__filter_sudocs(sudocs)
 
-        # iterate through list of sudos
-        for sudoc in filtered_sudocs:
-            # query filtered sudoc
-            self.__query_parameters['q'] = f"gn:{sudoc}"
-            query_request = requests.Request("GET",
-                                             url=self.__query_url,
-                                             headers=self.__query_headers,
-                                             params=self.__query_parameters)
-            query_prepped = query_request.prepare()
+        doc = CSVDocument(self.__file_handler, read_only=False)
 
-            with requests.Session() as session:
-                response = session.send(query_prepped)
-                print(response.text)
+        # iterate through list of sudocs
+        for i in range(len(filtered_sudocs)):
+            if i > 0:
+                text = self.__query_sudoc(filtered_sudocs[i])
+                self.__add_sudoc_record(doc, sudocs[i], text)
+        doc.write_contents_to_file()
 
             # if result found: update csv with results
         self.__query_parameters['q'] = ""
 
         return True
 
-    def __query_sudoc(self, sudoc: str) -> str:
-        print(f"Querying: {sudoc}")
-        return ""
+    def __add_sudoc_record(self, doc: CSVDocument, raw_sudoc: str, json_text: str):
+        if json_text == "":
+            return
 
-    # TODO: filter out punctuation and whitespace
-    def __filter_sudoc(self) -> str:
-        return ""
+        j = json.loads(json_text)
+
+        print("made it here")
+
+        if "numberOfRecords" not in j:
+            doc.add_row(SuDocRecord(raw_sudoc, "no response", "", "", "", "", "").get_dict())
+            return
+
+        if j["numberOfRecords"] <= 0:
+            doc.add_row(SuDocRecord(raw_sudoc, "no records found", "", "", "", "", "").get_dict())
+            return
+
+        n_records = j["numberOfRecords"]
+        if j["numberOfRecords"] > 1:
+            status = "multiple records found"
+        elif j["numberOfRecords"] == 1:
+            status = "single record found"
+        else:
+            status = "no records found"
+
+        for i in range(n_records):
+            doc.add_row(self.__bib_record_to_sudoc_record(raw_sudoc, status, j["bibRecords"][i]).get_dict())
+
+        print("n_records type: ", type(n_records))
+        print(n_records)
+
+    def __bib_record_to_sudoc_record(self, raw_sudoc: str, status: str, bib: dict) -> SuDocRecord:
+        filtered_sudoc = ""
+        gov_num = ""
+        title = ""
+        author = ""
+        pub_date = ""
+
+        sr = SuDocRecord(raw_sudoc, status, gov_num, filtered_sudoc, title, author, pub_date)
+        return sr
+
+    def __query_sudoc(self, sudoc: str) -> str:
+        print("Querying: " + sudoc)
+
+        # query filtered sudoc
+        self.__query_parameters['q'] = f"gn:{sudoc}"
+        query_request = requests.Request(method="GET",
+                                         url=self.__query_url,
+                                         headers=self.__query_headers,
+                                         params=self.__query_parameters)
+        query_prepped = query_request.prepare()
+
+        with requests.Session() as session:
+            response = session.send(query_prepped)
+
+        return response.text
 
     def __filter_sudocs(self, sudocs: list[str]) -> list[str]:
         filtered_sudocs = []
@@ -121,8 +170,8 @@ class OCLCSession:
         whitespace_translator = str.maketrans("", "", string.whitespace)
         punctuation_translator = str.maketrans("", "", string.punctuation)
 
-        for sudoc in sudocs:
-            filtered_sudocs.append(sudoc.translate(whitespace_translator).translate(punctuation_translator))
+        for i in range(len(sudocs)):
+            filtered_sudocs.append(sudocs[i].translate(whitespace_translator).translate(punctuation_translator))
 
         return filtered_sudocs
 
