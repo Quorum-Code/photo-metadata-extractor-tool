@@ -3,8 +3,6 @@
 secrets
 
 # Process files
-extractions/*
-extracted_data/*
 *.csv
 ml_pipeline_timings.txt
 
