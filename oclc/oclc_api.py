@@ -140,10 +140,22 @@ class OCLCSession:
 
     def __bib_record_to_sudoc_record(self, raw_sudoc: str, status: str, bib: dict) -> SuDocRecord:
         filtered_sudoc = ""
+
+
+
         gov_num = ""
         title = ""
         author = ""
         pub_date = ""
+
+        if "classification" in bib and "govDoc" in bib["classification"]:
+            gov_num = bib["classification"]["govDoc"][0]
+
+        if "date" in bib and "publicationDate" in bib["date"]:
+            pub_date = bib["date"]["publicationDate"]
+
+        if "title" in bib and "mainTitles" in bib["title"]:
+            title = bib["title"]["mainTitles"][0]["text"]
 
         sr = SuDocRecord(raw_sudoc, status, gov_num, filtered_sudoc, title, author, pub_date)
         return sr

@@ -197,3 +197,11 @@ class OCRHandler(QThread):
         self.results_ready.emit(result)
         self.is_finished.emit()
         return result
+
+
+class QueryThread(QThread):
+    is_finished = pyqtSignal()
+    progress_percent = pyqtSignal(float)
+
+    def __init__(self):
+        super().__init__()
