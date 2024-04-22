@@ -1,6 +1,8 @@
 import tkinter
 import json
 import customtkinter
+from CTkMessagebox import CTkMessagebox
+
 import file_handler as fh
 
 
@@ -93,6 +95,15 @@ class ConfigurationPage:
         self.query_parameters_textbox.insert("0.0", json.dumps(query_parameters, indent=2))
 
     def __load_default_text(self):
+        msg = CTkMessagebox(title="Load Default Configuration?",
+                            message="Are you sure you want to load the default configuration? "
+                                    "(It will not overwrite existing data until you save.)",
+                            icon="question",
+                            option_1="Cancel",
+                            option_2="Yes")
+        if msg.get() != "Yes":
+            return
+
         self.__file_handler.load_default_config()
         self.__load_config_text()
 
@@ -105,6 +116,15 @@ class ConfigurationPage:
         self.query_parameters_textbox.delete("0.0", tkinter.END)
 
     def __save_config_text(self):
+        msg = CTkMessagebox(title="Save Configuration?",
+                            message="Are you sure you want to save the configuration?",
+                            icon="question",
+                            option_1="Cancel",
+                            option_2="Yes")
+
+        if msg.get() != "Yes":
+            return
+
         token_headers = self.token_header_textbox.get("0.0", tkinter.END)
         token_body = self.token_parameters_textbox.get("0.0", tkinter.END)
         query_headers = self.query_header_textbox.get("0.0", tkinter.END)

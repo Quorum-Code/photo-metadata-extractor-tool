@@ -12,4 +12,4 @@ Search for your institution and navigate to its dedicated page.
 Once there you'll find a number at the end of the URL.
 
 If you're having trouble visit [here](https://registry.worldcat.org/registry/Institutions/285).
-At the end of the URL you should **285**, which is Cal Poly Humboldt's institution ID.
+At the end of the URL you should see **285**, which is Cal Poly Humboldt's institution ID.
