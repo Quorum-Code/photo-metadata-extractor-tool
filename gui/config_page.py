@@ -118,3 +118,5 @@ class ConfigurationPage:
 
             print("JSON Decoding error")
             pass
+
+        self.__load_config_text()

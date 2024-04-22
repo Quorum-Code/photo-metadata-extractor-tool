@@ -180,7 +180,11 @@ class FileHandler:
             new_dict["query"]["headers"] = json.loads(query_headers)
             new_dict["query"]["parameters"] = json.loads(query_parameters)
 
-            self.__set_configuration(new_dict)
+            self.__json_data["configuration"]["token"]["headers"] = new_dict["token"]["headers"]
+            self.__json_data["configuration"]["token"]["body"] = new_dict["token"]["body"]
+            self.__json_data["configuration"]["query"]["headers"] = new_dict["query"]["headers"]
+            self.__json_data["configuration"]["query"]["parameters"] = new_dict["query"]["parameters"]
+
             self.__save_json()
 
             return True
