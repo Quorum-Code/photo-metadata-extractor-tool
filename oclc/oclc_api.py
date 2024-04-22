@@ -1,3 +1,5 @@
+import typing
+
 import requests
 import json
 import base64
@@ -82,7 +84,7 @@ class OCLCSession:
             print("no response")
             return False
 
-    def query_csv_sudoc(self, csv_file_path: str) -> bool:
+    def query_csv_sudoc(self, csv_file_path: str, update_progress_percent: typing.Callable[[float], None]) -> bool:
         # Create csv object
         csv_doc = CSVDocument(self.__file_handler, file_path=csv_file_path, read_only=True)
 
@@ -101,6 +103,7 @@ class OCLCSession:
             if i > 0:
                 text = self.__query_sudoc(filtered_sudocs[i])
                 self.__add_sudoc_record(doc, sudocs[i], text)
+                update_progress_percent(i / float(len(filtered_sudocs)))
         doc.write_contents_to_file()
 
             # if result found: update csv with results

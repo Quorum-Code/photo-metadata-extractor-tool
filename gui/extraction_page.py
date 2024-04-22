@@ -1,3 +1,6 @@
+import time
+import typing
+
 import customtkinter
 from CTkMessagebox import CTkMessagebox
 import os
@@ -18,7 +21,7 @@ class ExtractionPage:
         self.__sudoc_csv = ""
         self.__file_icon_local_path = "icons\\folder-icon.png"
         # Reference to QThread must be stored or will be destroyed by garbage collector
-        self.__thread_object: OCRHanlder | None = None
+        self.__thread_object: OCRHandler | None = None
         # todo add error handling for no image found
         self.__file_icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.__file_icon_local_path)
         self.__file_icon = customtkinter.CTkImage(Image.open(self.__file_icon_path), size=(24, 24))
@@ -150,6 +153,12 @@ class ExtractionPage:
         self.__thread_object.progress_percent.connect(self.__debug_progress_percent)
         self.__thread_object.start()
 
+    def update_query_progress_percent(self, percent: float):
+        self.query_progress_bar.set(percent)
+
+    def update_query_progress_text(self, text):
+        self.query_progress_text.configure(text=text)
+
     def start_queries(self):
         # Start OCLC session
         oclc = OCLCSession(self.__file_handler)
@@ -158,13 +167,17 @@ class ExtractionPage:
         else:
             print("NOT Authorized")
 
-        # Pass CSV filepath to OCLC session object
-        if oclc.query_csv_sudoc(self.__sudoc_csv):
-            print("Succeeded querying csv sudoc")
-        else:
-            print("FAILED")
+        self.__thread_object = QueryThread(oclc, self.__sudoc_csv,
+                                           self.update_query_progress_percent, self.update_query_progress_text)
+        self.__thread_object.start()
 
-        print(f"SuDoc csv: {self.__sudoc_csv}")
+        # Pass CSV filepath to OCLC session object
+        # if oclc.query_csv_sudoc(self.__sudoc_csv):
+        #     print("Succeeded querying csv sudoc")
+        # else:
+        #     print("FAILED")
+        #
+        # print(f"SuDoc csv: {self.__sudoc_csv}")
 
         return
 
@@ -176,6 +189,9 @@ class ExtractionPage:
 
     def __debug_progress_percent(self, percent: float):
         print(f"percent: {percent}")
+
+    def __debug_progress_text(self, text: str):
+        print(f"text: {text}")
 
 
 class OCRHandler(QThread):
@@ -200,8 +216,23 @@ class OCRHandler(QThread):
 
 
 class QueryThread(QThread):
-    is_finished = pyqtSignal()
-    progress_percent = pyqtSignal(float)
-
-    def __init__(self):
+    def __init__(self, oclc: OCLCSession, csv_path: str,
+                 update_percent: typing.Callable, update_text: typing.Callable[[str], None]):
         super().__init__()
+        self.__oclc = oclc
+        self.__csv_path = csv_path
+        self.__update_percent = update_percent
+        self.__update_text = update_text
+
+    def run(self):
+        print("started")
+        self.__update_text("Started querying...")
+        self.__update_percent(0)
+
+        self.__oclc.query_csv_sudoc(self.__csv_path, self.__update_percent)
+
+        self.__update_percent(1)
+
+        self.__update_text("Finished querying...")
+        print("finished")
+        return
