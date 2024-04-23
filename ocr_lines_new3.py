@@ -2,7 +2,6 @@ import os
 import datetime
 import time
 import numpy as np
-from string import punctuation
 import math
 import cv2
 import pandas as pd
@@ -10,10 +9,11 @@ from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 import pickle
 from scipy.signal import find_peaks
 import multiprocessing
-#from concurrent.futures import ThreadPoolExecutor
-import keras_ocr_detection
 import keras_ocr_tools
 
+from scipy import ndimage as ndi
+from skimage.filters import gabor_kernel
+import ultralytics
 
 def warn(*args, **kwargs):
     """
@@ -37,8 +37,18 @@ count = 0
 ### The device with which to run image recognition functions on
 device = 'cpu'
 
+
 class ocr():
     def __init__(self, load_ocr_models=True, load_field_classifier=False):
+
+        """
+        An OCR object to hold and load the necessary machine learning models.
+
+        :param load_ocr_models: Load all necessary ML models except field_classifier which is not needed
+                                until the last part of the process
+        :param load_field_classifier: Load field_classifier only
+        """
+
         self.processor_typed = ''
         self.model_typed = ''
         self.processor_hw = ''
@@ -46,6 +56,7 @@ class ocr():
         self.writing_classifier = ''
         self.field_classifier = ''
         self.detector = ''
+
         if load_ocr_models:
             self.load_ocr_models()
         if load_field_classifier:
@@ -57,23 +68,29 @@ class ocr():
 
         :return: Text detection, text recognition, and classification models
         """
+
         print("Loading Models")
-        self.writing_classifier = pickle.load(open("./classifiers/writing_hgbc_model.sav", 'rb'))
-        print("Loading keras_ocr models")
-        self.detector = keras_ocr_detection.Detector(weights='clovaai_general')
+        self.writing_classifier = pickle.load(open("./ml_models/classifiers/etc_model.sav", 'rb'))
+        print("Loading text detector")
+        self.detector = ultralytics.YOLO('./ml_models/yolotextdet.pt')
         print("Loading trocr models")
-        self.processor_typed = TrOCRProcessor.from_pretrained('./ocr_models/typed_ocr_models')
+        self.processor_typed = TrOCRProcessor.from_pretrained('./ml_models/ocr_models/typed_ocr_models')
         self.model_typed = VisionEncoderDecoderModel.from_pretrained(
-            './ocr_models/typed_ocr_models'
+            './ml_models/ocr_models/typed_ocr_models'
         ).to(device)
-        self.processor_hw = TrOCRProcessor.from_pretrained('./ocr_models/hw_ocr_models')
+        self.processor_hw = TrOCRProcessor.from_pretrained('./ml_models/ocr_models/hw_ocr_models')
         self.model_hw = VisionEncoderDecoderModel.from_pretrained(
-            './ocr_models/hw_ocr_models'
+            './ml_models/ocr_models/hw_ocr_models'
         ).to(device)
         print("Successfully Loaded Models")
 
     def load_field_classifier(self):
-        self.field_classifier = pickle.load(open("./classifiers/label_hgbc_model.sav", 'rb'))
+        """
+        Function to load field classification model
+
+        :return: Text detection, text recognition, and classification models
+        """
+        self.field_classifier = pickle.load(open("./ml_models/classifiers/text_classifier.sav", 'rb'))
 
 def dir_validation(dir):
     """
@@ -95,48 +112,88 @@ def dir_validation(dir):
             return 202
     return 200
 
-img_read_flag = True
-def img_recognition(img_path, total_images, progress_signal):
+def hconcat_resize(img_list, interpolation=cv2.INTER_CUBIC):
+    """
+    Function to resize images and concatenate images horizontally
+
+    :param img_list: list of images to perform operations on
+    :param interpolation: interpolation argument for resize function from cv2 library
+
+    :return: Concatenated image
+    """
+
+    h_min = min(img.shape[0]
+                for img in img_list)
+
+    im_list_resize = [cv2.resize(img,
+                                 (int(img.shape[1] * h_min / img.shape[0])
+                                  if (img.shape[1] * h_min / img.shape[0]) > 1
+                                  else img.shape[1],
+                                  h_min),
+                                 interpolation=interpolation)
+                      for img in img_list]
+
+    return cv2.hconcat(im_list_resize)
+
+
+def most_frequent(lst):
+    """
+    Function to find the most common element in a list
+
+    :param lst: List with elements
+    :return: most common element
+    """
+
+    unique, counts = np.unique(lst, return_counts=True)
+    index = np.argmax(counts)
+    return unique[index]
+
+
+def img_recognition(img_dir, total_images, progress_signal):
     """
     Function to perform the bulk of the text recognition tasks
 
-    :param img_path: Path of image to be processed
-    :param processor_typed: Processor for typed TROCR
-    :param model_typed: Model for typed TROCR
-    :param processor_hw: Processor for handwritten TROCR
-    :param model_hw: Model for handwritten TROCR
-    :param writing_classifier: Classifier for text type(handwritten vs typed)
-    :param pipeline: Wrapper class for text detection model
+    :param img_dir: list of image paths
     :param total_images: Number of images to be processed
     :param progress_signal: Signal for GUI process bar
     :return: Dictionary with extracted data as {image path: extracted text}
     """
     global count, img_read_flag
     extractions = {}
-    ext_txt = ""
-    print("Beggining extraction  on image: ", img_path)
-    while img_read_flag == False:
-        pass
-    img_read_flag = False
-    img = keras_ocr_tools.read(img_path)
-    pred = ocr_obj.detector.detect([img_path])
-    img_read_flag = True
-    pred = get_distance(pred)
-    pred = list(distinguish_rows(pred))
-    for row in pred:
-        row = sorted(row, key=lambda x: x['dist_from_origin'])
-        for box in row:
-            uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0
-            lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0
-            ubx = int(round(box['top_left_x'])) if int(round(box['top_left_x'])) >= 0 else 0
-            lbx = int(round(box['bottom_right_x'])) if int(round(box['bottom_right_x'])) >= 0 else 0
-            if ubx >= lbx:
-                ubx = ubx - (ubx - lbx + 1)
-            if uby >= lby:
-                uby = lby - (uby - lby + 1)
-            cropped_img = img[uby:lby, ubx:lbx]
-            label = text_classification(cropped_img, writing_classifier)
-            if label == 'typed':
+
+    for img_path in img_dir:
+
+        print("Beggining extraction  on image: ", img_path)
+        ext_txt = ""
+        img = cv2.imread(img_path)
+        pred = text_detection(img)
+        pred = get_distance(pred)
+        pred = sorted(pred, key=lambda x: x['distance_y'])
+        pred = list(distinguish_rows(pred))
+        bar_img = cv2.imread("barsepimg.png")
+        for group in pred:
+            group = list(distinguish_rows(group))
+            image_crops = []
+            crop_labels = []
+            for row in group:
+                row = sorted(row, key=lambda x:x['distance_x'])
+                for box in row:
+                    uby = int(round(box['top_left_y'])) if int(round(box['top_left_y'])) >= 0 else 0
+                    lby = int(round(box['bottom_right_y'])) if int(round(box['bottom_right_y'])) >= 0 else 0
+                    ubx = int(round(box['top_left_x'])) if int(round(box['top_left_x'])) >= 0 else 0
+                    lbx = int(round(box['bottom_right_x'])) if int(round(box['bottom_right_x'])) >= 0 else 0
+                    if ubx >= lbx:
+                        ubx = ubx - (ubx - lbx + 1)
+                    if uby >= lby:
+                        uby = lby - (uby - lby + 1)
+                    cropped_img = img[uby:lby, ubx:lbx]
+                    image_crops.append(cropped_img)
+                    image_crops.append(bar_img)
+
+                    crop_labels.append(text_classification(cropped_img))
+            label = most_frequent(crop_labels)
+            cropped_img = hconcat_resize(image_crops)
+            if label in [ 'typed', 'cover' ]:
                 ext_txt = ext_txt + " " + text_recognition(
                     cropped_img,
                     label
@@ -146,12 +203,12 @@ def img_recognition(img_path, total_images, progress_signal):
                     cropped_img,
                     label
                 )
-            # ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
-            ext_txt = ' '.join(ext_txt.split())
-    extractions[img_path] = ext_txt
-    print("Completed extraction on image: ", img_path)
-    count += 1
-    progress_signal.emit(count / total_images)
+                    # ext_txt = ''.join('' if c in punctuation else c for c in ext_txt)
+                    #ext_txt = ' '.join(ext_txt.split())
+        extractions[img_path] = ext_txt + " "
+        print("Completed extraction on image: ", img_path)
+        count += 1
+        progress_signal.emit(count / total_images)
     return extractions
 
 def text_recognition(image, label):
@@ -159,12 +216,11 @@ def text_recognition(image, label):
     Calls transformers functions to perform text recognition from image.
 
     :param image: Image with text.
-    :param processor: Class to preprocess images for extraction.
-    :param model: VisionEncoderDecoder model to generate text from image.
+    :param label: Label with type of data to be parsed
     :return: The extracted text.
     """
 
-    if label == "typed":
+    if label in [ 'typed', 'cover' ]:
         pixel_values = ocr_obj.processor_typed(image, return_tensors='pt').pixel_values.to(device)
         generated_ids = ocr_obj.model_typed.generate(pixel_values)
         generated_text = ocr_obj.processor_typed.batch_decode(generated_ids, skip_special_tokens=True)[0]
@@ -175,8 +231,46 @@ def text_recognition(image, label):
 
     return generated_text
 
+def text_detection(img):
+    """
+    Calls detector model to perform text detection on the passed image
 
-def distinguish_rows(lst, thresh=50):
+    :param img: Image with text.
+    :return: List of boxes for the detected text
+    """
+
+    results = ocr_obj.detector.predict(source = img, imgsz=384, conf = .07,
+                       iou = .12, augment = True, max_det = 1000)
+    return [box.numpy().boxes.xyxy.tolist() for box in results]
+
+def distinguish_groups(lst):
+    """
+    Parses returned bounding boxes from objected detected function by text sections
+    :param lst: List of bounding boxes
+    :return: Sublists containing the bounding boxes grouped by text sections
+    """
+    sublists = []
+    for i in range(0, len(lst)):
+        added = False
+        if i == 0:
+            sublists.append([lst[i]])
+            continue
+        for j in range(0, len(sublists)):
+            if added == True:
+                break
+            for k in range(0, len(sublists[j])):
+                if added == True:
+                    break
+                if abs(sublists[j][k]['dist_from_origin'] - lst[i]['dist_from_origin']) <= \
+                      (sublists[j][k]['height'] + lst[i]['height']) / 2:
+                    sublists[j].append(lst[i])
+                    added = True
+
+        if added == False:
+            sublists.append([lst[i]])
+    return sublists
+
+def distinguish_rows(lst):
     """
     Parses returned bounding boxes from objected detected function by rows
     :param lst: List of bounding boxes
@@ -185,8 +279,11 @@ def distinguish_rows(lst, thresh=50):
     """
 
     sublists = []
+    if len(lst) == 1:
+        sublists.append(lst[0])
     for i in range(0, len(lst)-1):
-        if lst[i+1]['distance_y'] - lst[i]['distance_y'] <= thresh:
+        if abs(lst[i+1]['distance_y'] - lst[i]['distance_y']) <=  \
+           (lst[i]['height'] + lst[i+1]['height']) / 4:
             if lst[i] not in sublists:
                 sublists.append(lst[i])
             sublists.append(lst[i+1])
@@ -208,32 +305,53 @@ def get_distance(preds):
     x0, y0 = 0, 0
     idx = 0
     for group in preds[0]:
-        top_left_x, top_left_y = group[0]
-        bottom_right_x, bottom_right_y = group[2]
+        top_left_x = group[0]
+        top_left_y = group[1]
+        bottom_right_x = group[2]
+        bottom_right_y = group[3]
         center_x = (top_left_x + bottom_right_x)/2
         center_y = (top_left_y + bottom_right_y)/2
-        dist_from_origin = math.dist([x0,y0], [center_x, center_y])
+        dist_from_origin = math.dist([x0,y0], [.2*center_x, 1.8*center_y])
         distance_y = center_y - y0
+        distance_x = center_x - x0
+        height = abs(top_left_y - bottom_right_y)
         detections.append({
             'top_left_x': top_left_x,
             'top_left_y': top_left_y,
             'bottom_right_x': bottom_right_x,
             'bottom_right_y': bottom_right_y,
             'dist_from_origin': dist_from_origin,
-            'distance_y': distance_y})
+            'distance_y': distance_y,
+            'distance_x': distance_x,
+            'height': height
+            })
         idx = idx + 1
     return detections
 
-def text_classification(img):
+def longestZeroSeqLength(a):
     """
-    Function to classify text within an image as handwritten or typed
+    Function to find the longest sequence of zeros within a list
 
-    :param img: Image with text
-    :param classifier: Model to classify image
-    :return: Label from resulting classification
+    :param a: List with numeric elements
+    :return: Length of longest sequence of zeros
     """
-    img_num = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    th, th_img = cv2.threshold(img_num, 0,255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    chg = np.abs(np.diff(np.equal(a, 0).view(np.int8), prepend=[0], append=[0]))
+    rng = np.where(chg == 1)[0]
+    if rng.size == 0:
+        return 0
+    rng = rng.reshape(-1, 2)
+    return np.subtract(rng[:,1], rng[:,0]).max()
+
+def get_gray_img_features(img_num, th):
+    """
+    Function to collect features from grayscaled images for handwritten/printed text classification
+
+    :param img_num: Grayscaled image to be processed
+    :param th: Threshold value given by Otsu's Binarization method
+    :return: Grayscale image features
+    """
+
     img_height, img_width = np.array(img_num).shape
     counts, bins = np.histogram(img_num, range(257))
     peaks = find_peaks(counts)
@@ -251,11 +369,287 @@ def text_classification(img):
     upper_quart_perc = (upper_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1)*100
     lower_quart_count = np.count_nonzero(img_num <= (min_int + quart_range))
     lower_quart_perc = (lower_quart_count / (img_width * img_height) if (img_width * img_height) > 0 else 1)*100
-    ext_features = np.reshape(  [ log_transformed_mean, th,
-                                maxima_count,
-                                upper_quart_perc, lower_quart_perc,
-                                log_transformed_std, log_transformed_var] , (1, -1))
+
+    return [log_transformed_mean, th, maxima_count,
+            upper_quart_perc, lower_quart_perc,
+            log_transformed_std, log_transformed_var ]
+
+
+def get_gabor_features(img_num):
+    """
+    Function to collect Gabor Filter features for handwritten/printed text classification
+
+    :param img_num: Grayscaled image to be processed
+    :return: Gabor filter features
+    """
+    out_list_var = []
+    kernels = []
+    for theta in range(1, 17):
+        theta = theta * (180 / 16)
+        kernel = np.real(gabor_kernel(0.05, theta=theta, sigma_x=1, sigma_y=1))
+        kernels.append(kernel)
+    out_list_var_local = []
+    for kernel in kernels:
+        filtered = ndi.convolve(img_num, kernel, mode='wrap')
+        out_list_var_local.append(filtered.var())
+
+    for idx in range(len(out_list_var_local)):
+        out_list_var.append(out_list_var_local[idx])
+
+    return out_list_var
+
+def get_horizontal_projection_features(th_img):
+    """
+    Function to collect horizontal projection features for handwritten/printed text classification
+
+    :param th_img: Binarized image to be processed
+    :return: Horizontal projection features
+    """
+    swap_counts = []
+    run_lengths = []
+
+    for row in th_img:
+        run_lengths.append(longestZeroSeqLength(row))
+        swap_counts.append((np.diff(row)!=0).sum())
+
+    hist, bin_edges = np.histogram(run_lengths, bins=100, density = True)
+    max_run = hist.argmax()
+    row_max_run_count = hist[max_run]
+    normed_row_max = bin_edges[max_run]
+    row_hist_mean = hist.mean()
+    row_hist_var = hist.var()
+    row_hist_std = hist.std()
+    hist, bin_edges = np.histogram(swap_counts, bins=100, density = True)
+    max_run = hist.argmax()
+    sc_row_max_run_count = hist[max_run]
+    normed_sc_row_max = bin_edges[max_run]
+    sc_row_hist_mean = hist.mean()
+    sc_row_hist_var = hist.var()
+    sc_row_hist_std = hist.std()
+
+    return row_max_run_count, normed_row_max, row_hist_mean, row_hist_var, row_hist_std, \
+           sc_row_max_run_count, normed_sc_row_max, sc_row_hist_mean, sc_row_hist_var, sc_row_hist_std
+
+def get_vertical_projection_features(th_img):
+    """
+    Function to collect vertical projection features for handwritten/printed text classification
+
+    :param th_img: Binarized image to be processed
+    :return: Vertical projection features
+    """
+
+    swap_counts = []
+    run_lengths = []
+    for col in th_img.T:
+        run_lengths.append(longestZeroSeqLength(col))
+        swap_counts.append((np.diff(col)!=0).sum())
+
+    hist, bin_edges = np.histogram(run_lengths, bins=100, density = True)
+
+    max_run = hist.argmax()
+
+    col_max_run_count = hist[max_run]
+    normed_col_max = bin_edges[max_run]
+    col_hist_mean = hist.mean()
+    col_hist_var = hist.var()
+    col_hist_std = hist.std()
+
+    hist, bin_edges = np.histogram(swap_counts, bins=100, density = True)
+
+    max_run = hist.argmax()
+
+    sc_col_max_run_count = hist[max_run]
+    normed_sc_col_max = bin_edges[max_run]
+
+    sc_col_hist_mean = hist.mean()
+    sc_col_hist_var = hist.var()
+    sc_col_hist_std = hist.std()
+
+    return col_max_run_count, normed_col_max, col_hist_mean, col_hist_var, col_hist_std, \
+           sc_col_max_run_count, normed_sc_col_max, sc_col_hist_mean, sc_col_hist_var, sc_col_hist_std
+
+
+def get_315_deg_projection_features(th_img):
+    """
+    Function to collect features from projections drawn at 315 degrees
+    accross the given image for handwritten/printed text classification
+
+    :param th_img: Binarized image to be processed
+    :return: 315 degree projection features
+    """
+
+    swap_counts = []
+    run_lengths = []
+    curr_row = []
+    idx = 0
+
+    row_c, col_c, *_ = th_img.shape
+
+    for row in range(row_c - 1, -1, -1):
+        if row == row_c - 1:
+            run_lengths.append(longestZeroSeqLength([th_img[row][0]]))
+        for row_idx in range(row, row_c):
+            if idx >= col_c:
+                break
+            curr_row.append(th_img[row_idx][idx])
+            idx += 1
+        swap_counts.append((np.diff(curr_row) != 0).sum())
+        run_lengths.append(longestZeroSeqLength(curr_row))
+        idx = 0
+        curr_row = []
+
+    hist, bin_edges = np.histogram(run_lengths, bins=100, density=True)
+
+    max_run = hist.argmax()
+
+    deg_315_max_run_count = hist[max_run]
+    normed_deg_315_max = bin_edges[max_run]
+    deg_315_hist_mean = hist.mean()
+    deg_315_hist_var = hist.var()
+    deg_315_hist_std = hist.std()
+
+    hist, bin_edges = np.histogram(swap_counts, bins=100, density=True)
+
+    max_run = hist.argmax()
+
+    sc_deg_315_max_run_count = hist[max_run]
+    normed_sc_deg_315_max = bin_edges[max_run]
+
+    sc_deg_315_hist_mean = hist.mean()
+    sc_deg_315_hist_var = hist.var()
+    sc_deg_315_hist_std = hist.std()
+
+    return deg_315_max_run_count, normed_deg_315_max, deg_315_hist_mean, deg_315_hist_var, deg_315_hist_std, \
+        sc_deg_315_max_run_count, normed_sc_deg_315_max, sc_deg_315_hist_mean, sc_deg_315_hist_var, sc_deg_315_hist_std
+
+
+def get_225_deg_projection_features(th_img):
+    """
+    Function to collect features from projections drawn at 225 degrees
+    accross the given image for handwritten/printed text classification
+
+    :param th_img: Binarized image to be processed
+    :return: 225 degree projection features
+    """
+
+    swap_counts = []
+    run_lengths = []
+    curr_row = []
+
+    row_c, col_c, *_ = th_img.shape
+
+    idx = col_c - 1
+
+    for row in range(row_c - 1, -1, -1):
+        if row == row_c - 1:
+            run_lengths.append(longestZeroSeqLength([th_img[row][col_c - 1]]))
+        for row_idx in range(row, row_c):
+            if idx >= col_c or idx < 0:
+                break
+            curr_row.append(th_img[row_idx][idx])
+            idx -= 1
+        swap_counts.append((np.diff(curr_row) != 0).sum())
+        run_lengths.append(longestZeroSeqLength(curr_row))
+        idx = col_c - 1
+        curr_row = []
+
+    hist, bin_edges = np.histogram(run_lengths, bins=100, density=True)
+
+    max_run = hist.argmax()
+
+    deg_225_max_run_count = hist[max_run]
+    normed_deg_225_max = bin_edges[max_run]
+    deg_225_hist_mean = hist.mean()
+    deg_225_hist_var = hist.var()
+    deg_225_hist_std = hist.std()
+
+    hist, bin_edges = np.histogram(swap_counts, bins=100, density=True)
+
+    max_run = hist.argmax()
+
+    sc_deg_225_max_run_count = hist[max_run]
+    normed_sc_deg_225_max = bin_edges[max_run]
+    sc_deg_225_hist_mean = hist.mean()
+    sc_deg_225_hist_var = hist.var()
+    sc_deg_225_hist_std = hist.std()
+
+    return deg_225_max_run_count, normed_deg_225_max, deg_225_hist_mean, deg_225_hist_var, deg_225_hist_std, \
+        sc_deg_225_max_run_count, normed_sc_deg_225_max, sc_deg_225_hist_mean, sc_deg_225_hist_var, \
+        sc_deg_225_hist_std
+
+
+def text_classification(img):
+    """
+    Function to classify text within an image as handwritten or typed
+
+    :param img: Image with text
+    :return: Label from resulting classification
+    """
+
+    img_num = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    th, th_img = cv2.threshold(img_num, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    out_list = get_gray_img_features(img_num, th)
+
+    out_list_var = get_gabor_features(img_num)
+
+    #### Horizontal Projections
+
+    row_max_run_count, normed_row_max, row_hist_mean, row_hist_var, row_hist_std, \
+        sc_row_max_run_count, normed_sc_row_max, \
+        sc_row_hist_mean, sc_row_hist_var, sc_row_hist_std = get_horizontal_projection_features(th_img)
+
+    #### Vertical Projections
+    col_max_run_count, normed_col_max, col_hist_mean, col_hist_var, col_hist_std, \
+        sc_col_max_run_count, normed_sc_col_max, \
+        sc_col_hist_mean, sc_col_hist_var, sc_col_hist_std = get_vertical_projection_features(th_img)
+
+    #### 315 deg projections
+
+    deg_315_max_run_count, normed_deg_315_max, deg_315_hist_mean, deg_315_hist_var, deg_315_hist_std, \
+        sc_deg_315_max_run_count, normed_sc_deg_315_max, \
+        sc_deg_315_hist_mean, sc_deg_315_hist_var, \
+        sc_deg_315_hist_std = get_315_deg_projection_features(th_img)
+
+    #### 225 deg projections
+
+    deg_225_max_run_count, normed_deg_225_max, deg_225_hist_mean, deg_225_hist_var, deg_225_hist_std, \
+        sc_deg_225_max_run_count, normed_sc_deg_225_max, sc_deg_225_hist_mean, sc_deg_225_hist_var, \
+        sc_deg_225_hist_std = get_225_deg_projection_features(th_img)
+
+    out_list.extend([
+        row_max_run_count, normed_row_max,
+        row_hist_mean, row_hist_var, row_hist_std,
+
+        col_max_run_count, normed_col_max,
+        col_hist_mean, col_hist_var, col_hist_std,
+
+        deg_315_max_run_count, normed_deg_315_max,
+        deg_315_hist_mean, deg_315_hist_var, deg_315_hist_std,
+
+        deg_225_max_run_count, normed_deg_225_max,
+        deg_225_hist_mean, deg_225_hist_var, deg_225_hist_std,
+
+        sc_row_max_run_count, normed_sc_row_max,
+        sc_row_hist_mean, sc_row_hist_var, sc_row_hist_std,
+
+        sc_col_max_run_count, normed_sc_col_max,
+        sc_col_hist_mean, sc_col_hist_var, sc_col_hist_std,
+
+        sc_deg_315_max_run_count, normed_sc_deg_315_max,
+        sc_deg_315_hist_mean, sc_deg_315_hist_var, sc_deg_315_hist_std,
+
+        sc_deg_225_max_run_count, normed_sc_deg_225_max,
+        sc_deg_225_hist_mean, sc_deg_225_hist_var, sc_deg_225_hist_std,
+    ])
+
+    out_list.extend(out_list_var)
+
+    ext_features = np.reshape(out_list, (1, -1))
+
     label = ocr_obj.writing_classifier.predict(ext_features)
+
     return label
 
 def text_feature_extractor(value):
@@ -286,12 +680,12 @@ def pub_year_extraction(data):
     :param data: Text string to be parsed for a value representing a year
     :return: Value to be used as year
     """
+
     pub_year = ""
     for phrase in data.split():
         if phrase.isdigit() and (1600 <= int(phrase) <= datetime.datetime.today().year + 1):
             pub_year = phrase
     return pub_year
-
 
 def merge_dicts(data):
     """
@@ -321,10 +715,15 @@ def write_dataframe(data, label):
     datapath = "extracted_data/extracted_data.csv"
     os.makedirs(init_datapath, exist_ok=True)
     data = merge_dicts(data)
-    output_data = pd.DataFrame(
-        columns=['ID', 'Title', 'SuDoc', 'Publication Year', 'Path', 'Error Code', 'Query Status', 'Sudoc Image',
-                 'Title Image'])
-    title_key = sudoc_key = text_type_1_val = text_type_2_val = text_type_1_key = text_type_2_key = pub_year = ""
+    output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year',
+                                        'Path','Error Code','Query Status',
+                                        'Sudoc Image', 'Title Image',
+                                        'Image 1 Path', 'Image 2 Path',
+                                        'Image 1 Ext', 'Image 2 Ext',])
+    title_key = sudoc_key = text_type_1_val = text_type_2_val \
+              = text_type_1_key = text_type_2_key = pub_year \
+              = img_1_pth = img_1_ext  \
+              = img_2_pth = img_2_ext = ""
     for idx, key in enumerate(data):
         text_type = text_feature_extractor(data[key], ocr_obj)
         if text_type == 'title':
@@ -341,16 +740,31 @@ def write_dataframe(data, label):
             sudoc_key = key
         if (idx % 2) == 1:
             output_data = pd.concat([output_data, pd.DataFrame(
-                [{'ID': int((idx - 1) / 2), text_type_1_key: text_type_1_val, text_type_2_key: text_type_2_val,
-                  'Publication Year': pub_year, 'Sudoc Image': sudoc_key, 'Title Image': title_key}])],
-                                    ignore_index=True)
-            title_key = sudoc_key = text_type_1_val = text_type_2_val = text_type_1_key = text_type_2_key = pub_year = ""
+                [{'ID': int((idx - 1) / 2),
+                   text_type_1_key: text_type_1_val,
+                   text_type_2_key: text_type_2_val,
+                  'Publication Year': pub_year,
+                  'Sudoc Image': sudoc_key,
+                  'Title Image': title_key,
+                  'Image 1 Path': img_1_pth,
+                  'Image 2 Path': img_2_pth,
+                  'Image 1 Ext': img_1_ext,
+                  'Image 2 Ext': img_2_ext,
+                  }])],
+                ignore_index=True)
+        else:
+            img_1_pth = key
+            img_1_ext = data[key]
+
+        title_key = sudoc_key = text_type_1_val = text_type_2_val \
+            = text_type_1_key = text_type_2_key = pub_year \
+            = img_1_pth = img_1_ext \
+            = img_2_pth = img_2_ext = ""
+
     # print(output_data)
-    output_data.to_csv(datapath, index=False)
+    output_data.to_csv(datapath, index=False, mode="a")
     print("Completed Writing Step")
     return datapath
-
-img_read_flag = True
 
 def main(path, progress_signal):
     """
@@ -377,25 +791,24 @@ def main(path, progress_signal):
         return
 
     extracted_data = []
-    collected_data = []
+    collected_data_proc_1 = []
+    collected_data_proc_2 = []
+
     img_dir = os.listdir(path)
     img_dir = [os.path.join(path, img) for img in img_dir]
     img_dir.sort(key=lambda x: os.path.getctime(x))
     total_images = len(img_dir)
     start_time = time.time()
     with multiprocessing.Pool(processes=2) as pool:
-        halfpoint = False
-        for idx in range(0, len(img_dir), 2):
-            collected_data.append(pool.apply_async(img_recognition, (img_dir[idx],)))
-            collected_data.append(pool.apply_async(img_recognition, (img_dir[idx + 1],)))
-            for obj in range(len(collected_data)):
-                extracted_data.append(collected_data[obj].get())
+        hp = total_images//2
+        collected_data_proc_1.append(pool.apply_async(img_recognition, (img_dir[:hp],)))
+        collected_data_proc_2.append(pool.apply_async(img_recognition, (img_dir[hp:],)))
+        for obj in range(len(collected_data_proc_1)):
+            extracted_data.append(collected_data_proc_1[obj].get())
 
-            if (idx > int(len(img_dir) / 2)) and halfpoint == False:
-                halfpoint = True
-                write_dataframe(extracted_data)
-
-            collected_data = []
+        for obj in range(len(collected_data_proc_2)):
+            extracted_data.append(collected_data_proc_2[obj].get())
+        write_dataframe(extracted_data)
 
         pool.close()
         pool.join()
@@ -414,7 +827,7 @@ if multiprocessing.current_process().name != 'MainProcess':
     ocr_obj = ocr(load_ocr_models=True, load_field_classifier=False)
     load_time = time.time() - start_time
     time_file = open('ml_pipeline_timings.txt', 'a')
-    time_file.write("Model Loading Time: " + str(load_time) + "\n")
+    time_file.write("Model Loadng Time: " + str(load_time) + "\n")
 
 if __name__ == '__main__':
     main(path, progress_signal)

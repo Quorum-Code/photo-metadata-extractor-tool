@@ -1,6 +1,8 @@
 import string
 import time
 
+# testing rule enforcement on main
+
 # with open("some.csv", mode='r') as file:
 #     csvFile = csv.DictReader(file, delimiter='|')
 #     for name in csv.DictReader.reader:

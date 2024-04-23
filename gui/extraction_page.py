@@ -186,8 +186,8 @@ class OCRHanlder(QThread):
 
     def run(self):
         print("started extraction")
-        # result = ocr_lines_new3.read_data(self.directory, self.progress_percent)
-        # print(result)
-        # self.results_ready.emit(result)
-        # self.is_finished.emit()
-        # return result/
+        result = ocr_lines_new3.main(self.directory, self.progress_percent)
+        print(result)
+        self.results_ready.emit(result)
+        self.is_finished.emit()
+        return result
