@@ -5,7 +5,8 @@
 
 1. Install [Python 3.10](https://www.python.org/downloads/) or newer.
 2. Clone or download the repository.
-3. Open the command line at the project and run `pip install -r requirements.txt`.
+3. Open the command line at the project and run `pip install -r requirements.txt`. (If you get an error try adding
+`--user` to the end of the command, this installs the libraries to the current user.)
 4. Download [ocr_models](https://drive.google.com/drive/folders/1aVnQa8RhbWujhjkp-LcivGucdrFSTn4b?usp=sharing).
 5. Move the "ocr_models" into the project directory.
 6. Start the program with `python -m main`.
