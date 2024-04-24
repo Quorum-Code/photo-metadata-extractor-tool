@@ -191,6 +191,8 @@ class FileHandler:
         except json.JSONDecodeError:
             print(new_dict)
             return False
+
+        self.__save_json()
         return True
 
     def set_config_old(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str) -> bool:
