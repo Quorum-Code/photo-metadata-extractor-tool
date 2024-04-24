@@ -5,6 +5,8 @@ import json
 import base64
 import configparser
 import string
+
+import json_parser
 from file_handler import FileHandler
 from csv_handler import CSVDocument, SuDocRecord
 from csv_reader import *
@@ -98,17 +100,24 @@ class OCLCSession:
         # filter sudocs
         filtered_sudocs = self.__filter_sudocs(sudocs)
 
-        doc = CSVDocument(self.__file_handler, read_only=False)
         csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
+        jp = json_parser.JSONParser(json_parser.DEFAULT_KEY_MAP)
 
         # iterate through list of sudocs
-        result: list[list[str]] = []
+        result: list[dict[str]] = []
         for i in range(len(filtered_sudocs)):
-            if i > 0:
-                text = self.__query_term(filtered_sudocs[i])
-                self.__add_sudoc_record(doc, sudocs[i], text)
-                update_progress_percent(i / float(len(filtered_sudocs)))
-        doc.write_contents_to_file()
+            text = self.__query_term(filtered_sudocs[i])
+            jd = json.loads(text)
+
+            row: dict[str, str] = {}
+            if "bibRecords" in jd and len(jd["bibRecords"]) > 0:
+                row = jp.get_values(jd["bibRecords"][0])
+
+            print(f"ROW: {row}")
+            result.append(row)
+        # print(f"jp_cols: {jp.get_cols()}")
+        # csv_writer.write_data(jp.get_cols(), result)
+        # csv_writer.
 
         self.__query_parameters['q'] = ""
 
