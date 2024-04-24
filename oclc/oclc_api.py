@@ -62,8 +62,6 @@ class OCLCSession:
         token_request = requests.Request("POST", url=self.__token_url,
                                          data=self.__token_body, headers=self.__token_headers)
         token_request_prepped = token_request.prepare()
-        print(self.__token_headers)
-        print(self.__token_body)
 
         # Send request
         with requests.Session() as session:
@@ -101,7 +99,7 @@ class OCLCSession:
         # iterate through list of sudocs
         for i in range(len(filtered_sudocs)):
             if i > 0:
-                text = self.__query_sudoc(filtered_sudocs[i])
+                text = self.__query_term(filtered_sudocs[i])
                 self.__add_sudoc_record(doc, sudocs[i], text)
                 update_progress_percent(i / float(len(filtered_sudocs)))
         doc.write_contents_to_file()
@@ -144,8 +142,6 @@ class OCLCSession:
     def __bib_record_to_sudoc_record(self, raw_sudoc: str, status: str, bib: dict) -> SuDocRecord:
         filtered_sudoc = ""
 
-
-
         gov_num = ""
         title = ""
         author = ""
@@ -163,8 +159,22 @@ class OCLCSession:
         sr = SuDocRecord(raw_sudoc, status, gov_num, filtered_sudoc, title, author, pub_date)
         return sr
 
-    def __query_term(self):
-        return
+    def __query_term(self, sudoc: str) -> str:
+        print("Querying: " + sudoc)
+
+        # query filtered sudoc
+        qt = self.__file_handler.get_query_type()
+        self.__query_parameters['q'] = f"{qt}:{sudoc}"
+        query_request = requests.Request(method="GET",
+                                         url=self.__query_url,
+                                         headers=self.__query_headers,
+                                         params=self.__query_parameters)
+        query_prepped = query_request.prepare()
+
+        with requests.Session() as session:
+            response = session.send(query_prepped)
+
+        return response.text
 
     def __query_sudoc(self, sudoc: str) -> str:
         print("Querying: " + sudoc)
