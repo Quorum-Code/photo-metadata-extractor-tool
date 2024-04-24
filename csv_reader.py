@@ -27,6 +27,7 @@ class CSVReader:
 
         self.__col_names = self.__rows[0]
         self.__rows = self.__rows[1:]
+        print(f"d: {self.__rows}")
 
         return
 
@@ -35,6 +36,17 @@ class CSVReader:
 
     def get_col_names(self) -> list[str]:
         return self.__col_names
+
+    def get_query_terms(self) -> list[str]:
+        return self.get_col(0)
+
+    def get_col(self, index: int) -> list[str]:
+        col_data: list[str] = []
+
+        for i in range(len(self.__rows)):
+            col_data.insert(i, self.__rows[i][index])
+
+        return col_data
 
 
 def main():

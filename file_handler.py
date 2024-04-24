@@ -4,6 +4,7 @@ import os
 import codecs
 import copy
 import sys
+import json_parser
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
@@ -59,6 +60,14 @@ DEFAULT_DATA = {
     "configuration": DEFAULT_CONFIGURATION
 }
 
+DEFAULT_KEY_MAP = {
+    "SuDoc": [
+        "classifications",
+        "govDoc",
+        "0"
+    ]
+}
+
 
 class FileHandler:
     def __init__(self):
@@ -88,7 +97,10 @@ class FileHandler:
     def get_program_path(self) -> str:
         if "program_path" in self.__json_data["settings"].keys() and self.__json_data["settings"]["program_path"] != "":
             return self.__json_data["settings"]["program_path"]
-        return None
+        return ""
+
+    def query_result_folder_path(self) -> str:
+        return "./extracted_data"
 
     def load_settings(self):
         try:

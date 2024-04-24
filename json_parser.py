@@ -2,8 +2,8 @@ import json
 
 
 class JSONParser:
-    def __init__(self, key_map: dict[str, list[str]]):
-        self.__key_map: dict[str, list[str]] = key_map
+    def __init__(self, key_map: list[dict]):
+        self.__key_map: list[dict] = key_map
         return
 
     def get_values(self, json_text: str) -> dict[str, str]:
@@ -26,18 +26,44 @@ class JSONParser:
 
 
 def small_test():
-    map_config = {
-        "SuDoc": [
-            "classifications",
-            "govDoc",
-            "0"
-        ]
-    }
+    map_config = [
+        {
+            "name": "SuDoc",
+            "path": [
+                "classifications",
+                "govDoc",
+                "0"
+            ]
+        },
+        {
+            "name": "Title",
+            "path": [
+                "title",
+                "mainTitles",
+                "0"
+            ]
+        },
+        {
+            "name": "PublicationDate",
+            "path": [
+                "date",
+                "publicationDate"
+            ]
+        }
+    ]
 
     input_json = {
         "classifications": {
             "govDoc": [
                 "DOCS 1:234/567"
+            ]
+        },
+        "date": {
+            "publicationDate": "1234"
+        },
+        "title": {
+            "mainTitles": [
+                "title_0"
             ]
         }
     }

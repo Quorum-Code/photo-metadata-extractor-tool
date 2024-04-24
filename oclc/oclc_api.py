@@ -7,6 +7,8 @@ import configparser
 import string
 from file_handler import FileHandler
 from csv_handler import CSVDocument, SuDocRecord
+from csv_reader import *
+from csv_writer import *
 
 
 class OCLCSession:
@@ -84,10 +86,12 @@ class OCLCSession:
 
     def query_csv_sudoc(self, csv_file_path: str, update_progress_percent: typing.Callable[[float], None]) -> bool:
         # Create csv object
-        csv_doc = CSVDocument(self.__file_handler, file_path=csv_file_path, read_only=True)
+        # csv_doc = CSVDocument(self.__file_handler, file_path=csv_file_path, read_only=True)
+        csv_reader = CSVReader(csv_file_path)
 
         # get list of sudocs
-        sudocs = csv_doc.get_all_sudocs()
+        sudocs = csv_reader.get_query_terms()
+        print(f"Terms: {sudocs}")
         for sudoc in sudocs:
             print("a_sudoc: " + sudoc)
 
@@ -95,8 +99,10 @@ class OCLCSession:
         filtered_sudocs = self.__filter_sudocs(sudocs)
 
         doc = CSVDocument(self.__file_handler, read_only=False)
+        csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
 
         # iterate through list of sudocs
+        result: list[list[str]] = []
         for i in range(len(filtered_sudocs)):
             if i > 0:
                 text = self.__query_term(filtered_sudocs[i])
@@ -104,7 +110,6 @@ class OCLCSession:
                 update_progress_percent(i / float(len(filtered_sudocs)))
         doc.write_contents_to_file()
 
-            # if result found: update csv with results
         self.__query_parameters['q'] = ""
 
         return True

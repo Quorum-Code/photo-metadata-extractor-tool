@@ -3,14 +3,21 @@ import os
 import time
 
 
+def generate_filename() -> str:
+    return CSVWriter.FILE_PREFIX + time.strftime(CSVWriter.TIME_FORMAT, time.localtime()) + CSVWriter.FILE_SUFFIX
+
+
 class CSVWriter:
     FILE_PREFIX = "extraction_"
     TIME_FORMAT = "%m-%d-%Y_%H.%M.%S"
     DELIMITER = "|"
     FILE_SUFFIX = ".csv"
 
-    def __init__(self, file_name: str, folder_path: str):
+    def __init__(self, folder_path: str, file_name=""):
         self.__file_name: str = file_name
+        if self.__file_name == "":
+            self.__file_name = generate_filename()
+
         self.__folder_path: str = folder_path
         self.__path: str = self.__process_file_path()
 
@@ -42,9 +49,6 @@ class CSVWriter:
             path = os.path.join(self.__folder_path,  self.__generate_filename())
 
         return path
-
-    def __generate_filename(self) -> str:
-        return CSVWriter.FILE_PREFIX + time.strftime(CSVWriter.TIME_FORMAT, time.localtime()) + CSVWriter.FILE_SUFFIX
 
 
 def small_test():
