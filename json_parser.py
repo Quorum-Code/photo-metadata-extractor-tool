@@ -7,20 +7,22 @@ class JSONParser:
         return
 
     def get_values(self, json_text: str) -> dict[str, str]:
-        j = json.loads(json_text)
+        jd = json.loads(json_text)
         row: dict[str, str] = {}
 
-        last = j
-        for col in self.__key_map:
-            for i in range(len(self.__key_map[col])):
-                key = self.__key_map[col][i]
+        for i in range(len(self.__key_map)):
+            last = jd
+            path = self.__key_map[i]["path"]
+            name = self.__key_map[i]["name"]
+            for j in range(len(path)):
+                key = path[j]
                 if key.isdigit() and type(last) == list:
                     last = last[int(key)]
                 elif key in last:
                     last = last[key]
                 else:
-                    print("json_parser: key_map improperly configured or provided bad json_text")
-            row[col] = last
+                    print(f"json_parser: key_map improperly configured or provided bad json_text {last}")
+            row[name] = last
 
         return row
 
