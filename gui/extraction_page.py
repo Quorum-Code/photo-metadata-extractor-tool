@@ -168,7 +168,8 @@ class ExtractionPage:
             print("NOT Authorized")
 
         self.__thread_object = QueryThread(oclc, self.__sudoc_csv,
-                                           self.update_query_progress_percent, self.update_query_progress_text)
+                                           self.update_query_progress_percent,
+                                           self.update_query_progress_text)
         self.__thread_object.start()
 
         # Pass CSV filepath to OCLC session object

@@ -163,6 +163,9 @@ class OCLCSession:
         sr = SuDocRecord(raw_sudoc, status, gov_num, filtered_sudoc, title, author, pub_date)
         return sr
 
+    def __query_term(self):
+        return
+
     def __query_sudoc(self, sudoc: str) -> str:
         print("Querying: " + sudoc)
 

@@ -17,7 +17,7 @@ class ConfigurationPage:
         self.configuration_frame.grid_columnconfigure(0, weight=1)
         self.configuration_text = customtkinter.CTkLabel(self.configuration_frame, text="Configuration Page",
                                                          font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.configuration_text.grid(row=0, column=0, padx=20, pady=20)
+        self.configuration_text.grid(row=0, column=0, padx=20, pady=10)
 
         # Config warning
         self.configuration_warning_frame = customtkinter.CTkFrame(self.configuration_frame,
@@ -26,8 +26,8 @@ class ConfigurationPage:
         self.configuration_warning_frame.grid(row=1, column=0, padx=10, pady=5)
 
         self.config_warning_text = customtkinter.CTkLabel(self.configuration_warning_frame,
-                                                          text="WARNING: If you don't know what these settings mean, "
-                                                               "don't change them.",
+                                                          text="You can find more information in the "
+                                                               "documentation.",
                                                           font=customtkinter.CTkFont(size=15, slant="italic"),
                                                           width=250)
         self.config_warning_text.grid(row=0, column=0)
@@ -37,35 +37,30 @@ class ConfigurationPage:
                                                           corner_radius=5)
         self.token_request_frame.grid(row=2, column=0, padx=10, pady=10)
 
-        self.token_header_label = customtkinter.CTkLabel(self.token_request_frame, text="Token Request Header")
+        self.token_header_label = customtkinter.CTkLabel(self.token_request_frame, text="Token Config")
         self.token_header_label.grid(row=0, column=0)
 
-        self.token_header_textbox = customtkinter.CTkTextbox(self.token_request_frame, height=150, width=250)
+        self.token_header_textbox = customtkinter.CTkTextbox(self.token_request_frame, height=150, width=500)
         self.token_header_textbox.grid(row=1, column=0, padx=10, pady=10)
-
-        self.token_parameters_label = customtkinter.CTkLabel(self.token_request_frame, text="Token Request Paramenters")
-        self.token_parameters_label.grid(row=0, column=1)
-
-        self.token_parameters_textbox = customtkinter.CTkTextbox(self.token_request_frame, height=150, width=250)
-        self.token_parameters_textbox.grid(row=1, column=1, padx=10, pady=10)
 
         # Query Request config
         self.query_request_frame = customtkinter.CTkFrame(self.configuration_frame,
                                                           corner_radius=5)
         self.query_request_frame.grid(row=3, column=0, padx=10, pady=10)
 
-        self.query_header_label = customtkinter.CTkLabel(self.query_request_frame, text="Query Request Header")
+        self.query_header_label = customtkinter.CTkLabel(self.query_request_frame, text="Query Config")
         self.query_header_label.grid(row=0, column=0)
 
-        self.query_header_textbox = customtkinter.CTkTextbox(self.query_request_frame, height=150, width=250)
+        self.query_header_textbox = customtkinter.CTkTextbox(self.query_request_frame, height=150, width=500)
         self.query_header_textbox.grid(row=1, column=0, padx=10, pady=10)
 
-        self.query_parameters_label = customtkinter.CTkLabel(self.query_request_frame, text="Query Request Paramenters")
-        self.query_parameters_label.grid(row=0, column=1)
+        # self.query_parameters_label = customtkinter.CTkLabel(self.query_request_frame, text="Query Request Paramenters")
+        # self.query_parameters_label.grid(row=0, column=1)
+        #
+        # self.query_parameters_textbox = customtkinter.CTkTextbox(self.query_request_frame, height=150, width=250)
+        # self.query_parameters_textbox.grid(row=1, column=1, padx=10, pady=10)
 
-        self.query_parameters_textbox = customtkinter.CTkTextbox(self.query_request_frame, height=150, width=250)
-        self.query_parameters_textbox.grid(row=1, column=1, padx=10, pady=10)
-
+        # Config buttons
         self.config_buttons = customtkinter.CTkFrame(self.configuration_frame, corner_radius=0, fg_color="transparent")
         self.config_buttons.grid(row=4, column=0, padx=10, pady=10)
 
@@ -84,15 +79,11 @@ class ConfigurationPage:
     def __load_config_text(self):
         self.__clear_config_text()
 
-        token_headers = self.__file_handler.get_token_headers()
-        token_body = self.__file_handler.get_token_body()
-        query_headers = self.__file_handler.get_query_headers()
-        query_parameters = self.__file_handler.get_query_parameters()
+        token_settings = self.__file_handler.get_token_settings()
+        query_settings = self.__file_handler.get_query_settings()
 
-        self.token_header_textbox.insert("0.0", json.dumps(token_headers, indent=2))
-        self.token_parameters_textbox.insert("0.0", json.dumps(token_body, indent=2))
-        self.query_header_textbox.insert("0.0", json.dumps(query_headers, indent=2))
-        self.query_parameters_textbox.insert("0.0", json.dumps(query_parameters, indent=2))
+        self.token_header_textbox.insert("0.0", json.dumps(token_settings, indent=2))
+        self.query_header_textbox.insert("0.0", json.dumps(query_settings, indent=2))
 
     def __load_default_text(self):
         msg = CTkMessagebox(title="Load Default Configuration?",
@@ -110,10 +101,7 @@ class ConfigurationPage:
     def __clear_config_text(self):
         # Clears text from "0.0" -> first line.first column, to tkinter.END -> end of text
         self.token_header_textbox.delete("0.0", tkinter.END)
-        self.token_parameters_textbox.delete("0.0", tkinter.END)
-
         self.query_header_textbox.delete("0.0", tkinter.END)
-        self.query_parameters_textbox.delete("0.0", tkinter.END)
 
     def __save_config_text(self):
         msg = CTkMessagebox(title="Save Configuration?",
@@ -125,12 +113,10 @@ class ConfigurationPage:
         if msg.get() != "Yes":
             return
 
-        token_headers = self.token_header_textbox.get("0.0", tkinter.END)
-        token_body = self.token_parameters_textbox.get("0.0", tkinter.END)
-        query_headers = self.query_header_textbox.get("0.0", tkinter.END)
-        query_parameters = self.query_parameters_textbox.get("0.0", tkinter.END)
+        token_settings = self.token_header_textbox.get("0.0", tkinter.END)
+        query_settings = self.query_header_textbox.get("0.0", tkinter.END)
 
-        is_successful = self.__file_handler.set_config(token_headers, token_body, query_headers, query_parameters)
+        is_successful = self.__file_handler.set_config(token_settings, query_settings)
 
         if not is_successful:
             # todo, change warning text to ERROR: json decoding error

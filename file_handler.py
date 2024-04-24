@@ -44,8 +44,8 @@ DEFAULT_CONFIGURATION = {
             "orderBy": "bestMatch",
             "offset": 1,
             "limit": 10
-
-        }
+        },
+        "query_type": "gn"
     }
 }
 
@@ -144,6 +144,12 @@ class FileHandler:
     def get_secrets(self) -> [str, str]:
         return self.__secrets["client_id"], self.__secrets["client_secret"]
 
+    def get_token_settings(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["token"])
+
+    def get_query_settings(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["query"])
+
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]
 
@@ -163,7 +169,31 @@ class FileHandler:
     def get_query_parameters(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["query"]["parameters"])
 
-    def set_config(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str) -> bool:
+    def get_query_type(self) -> str:
+        return self.__json_data["configuration"]["query"]["query_type"]
+
+    def set_config(self, token_settings, query_settings) -> bool:
+        token_settings = self.__json_form_str(token_settings)
+        query_settings = self.__json_form_str(query_settings)
+
+        new_dict = {
+            "token": {},
+            "query": {}
+        }
+
+        try:
+            new_dict["token"] = json.loads(token_settings)
+            new_dict["query"] = json.loads(query_settings)
+
+            self.__json_data["configuration"]["token"] = new_dict["token"]
+            self.__json_data["configuration"]["query"] = new_dict["query"]
+
+        except json.JSONDecodeError:
+            print(new_dict)
+            return False
+        return True
+
+    def set_config_old(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str) -> bool:
         token_headers = self.__json_form_str(token_headers)
         token_body = self.__json_form_str(token_body)
         query_headers = self.__json_form_str(query_headers)
