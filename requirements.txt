@@ -14,10 +14,9 @@ opencv-python~=4.8.1.78
 pandas~=2.1.2
 transformers~=4.34.1
 ultralytics~=8.1.47
+jiwer~=3.0.3
 
 configparser~=6.0.0
-scipy~=1.11.3
-imgaug~=0.4.0
 validators~=0.22.0
 matplotlib~=3.8.0
 shapely~=2.0.2
