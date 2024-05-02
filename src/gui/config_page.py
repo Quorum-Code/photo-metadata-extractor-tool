@@ -3,7 +3,7 @@ import json
 import customtkinter
 from CTkMessagebox import CTkMessagebox
 
-import file_handler as fh
+import local_data.file_handler as fh
 
 
 class ConfigurationPage:

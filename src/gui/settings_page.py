@@ -1,9 +1,9 @@
 import customtkinter
-import file_handler
+import local_data.file_handler
 
 
 class SettingsPage:
-    def __init__(self, parent, filehandler: file_handler.FileHandler):
+    def __init__(self, parent, filehandler: local_data.file_handler.FileHandler):
         self.__parent = parent
         self.__filehandler = filehandler
 

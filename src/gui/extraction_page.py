@@ -9,7 +9,7 @@ from PIL import Image
 from customtkinter import filedialog
 import ocr_lines_new3
 from oclc.oclc_api import OCLCSession
-from file_handler import FileHandler
+from local_data.file_handler import FileHandler
 
 
 class ExtractionPage:

@@ -1,6 +1,6 @@
 import customtkinter
 from gui import extraction_page, settings_page, config_page, getting_started_page
-from file_handler import FileHandler
+from local_data.file_handler import FileHandler
 
 
 class App(customtkinter.CTk):
