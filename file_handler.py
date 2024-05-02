@@ -4,6 +4,7 @@ import os
 import codecs
 import copy
 import sys
+import json_parser
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
@@ -44,8 +45,8 @@ DEFAULT_CONFIGURATION = {
             "orderBy": "bestMatch",
             "offset": 1,
             "limit": 10
-
-        }
+        },
+        "query_type": "gn"
     }
 }
 
@@ -57,6 +58,14 @@ DEFAULT_SECRETS = {
 DEFAULT_DATA = {
     "settings": DEFAULT_SETTINGS,
     "configuration": DEFAULT_CONFIGURATION
+}
+
+DEFAULT_KEY_MAP = {
+    "SuDoc": [
+        "classifications",
+        "govDoc",
+        "0"
+    ]
 }
 
 
@@ -88,7 +97,10 @@ class FileHandler:
     def get_program_path(self) -> str:
         if "program_path" in self.__json_data["settings"].keys() and self.__json_data["settings"]["program_path"] != "":
             return self.__json_data["settings"]["program_path"]
-        return None
+        return ""
+
+    def query_result_folder_path(self) -> str:
+        return "./extracted_data"
 
     def load_settings(self):
         try:
@@ -144,6 +156,12 @@ class FileHandler:
     def get_secrets(self) -> [str, str]:
         return self.__secrets["client_id"], self.__secrets["client_secret"]
 
+    def get_token_settings(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["token"])
+
+    def get_query_settings(self) -> dict:
+        return copy.deepcopy(self.__json_data["configuration"]["query"])
+
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]
 
@@ -163,7 +181,33 @@ class FileHandler:
     def get_query_parameters(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["query"]["parameters"])
 
-    def set_config(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str) -> bool:
+    def get_query_type(self) -> str:
+        return self.__json_data["configuration"]["query"]["query_type"]
+
+    def set_config(self, token_settings, query_settings) -> bool:
+        token_settings = self.__json_form_str(token_settings)
+        query_settings = self.__json_form_str(query_settings)
+
+        new_dict = {
+            "token": {},
+            "query": {}
+        }
+
+        try:
+            new_dict["token"] = json.loads(token_settings)
+            new_dict["query"] = json.loads(query_settings)
+
+            self.__json_data["configuration"]["token"] = new_dict["token"]
+            self.__json_data["configuration"]["query"] = new_dict["query"]
+
+        except json.JSONDecodeError:
+            print(new_dict)
+            return False
+
+        self.__save_json()
+        return True
+
+    def set_config_old(self, token_headers: str, token_body: str, query_headers: str, query_parameters: str) -> bool:
         token_headers = self.__json_form_str(token_headers)
         token_body = self.__json_form_str(token_body)
         query_headers = self.__json_form_str(query_headers)
@@ -180,7 +224,11 @@ class FileHandler:
             new_dict["query"]["headers"] = json.loads(query_headers)
             new_dict["query"]["parameters"] = json.loads(query_parameters)
 
-            self.__set_configuration(new_dict)
+            self.__json_data["configuration"]["token"]["headers"] = new_dict["token"]["headers"]
+            self.__json_data["configuration"]["token"]["body"] = new_dict["token"]["body"]
+            self.__json_data["configuration"]["query"]["headers"] = new_dict["query"]["headers"]
+            self.__json_data["configuration"]["query"]["parameters"] = new_dict["query"]["parameters"]
+
             self.__save_json()
 
             return True
