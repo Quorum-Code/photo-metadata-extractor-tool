@@ -8,7 +8,7 @@ import string
 
 import json_parser
 from file_handler import FileHandler
-from csv_handler import CSVDocument, SuDocRecord
+from csv_handlers.csv_handler import CSVDocument, SuDocRecord
 from csv_reader import *
 from csv_writer import *
 
