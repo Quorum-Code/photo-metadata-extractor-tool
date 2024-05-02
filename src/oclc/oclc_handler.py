@@ -2,7 +2,7 @@ import requests
 import json
 import base64
 import configparser
-import csv_handler as csvh
+import csv_handlers.csv_handler as csvh
 
 
 class OCLCHandler:

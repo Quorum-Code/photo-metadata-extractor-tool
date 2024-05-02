@@ -1,0 +1,31 @@
+Metadata-Version: 2.1
+Name: pmet
+Version: 0.0.0
+Summary: photo-metadata-extrator-tool
+Author: Evan Putnam
+License: MIT
+Platform: win32
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >3.9
+License-File: LICENSE
+Requires-Dist: requests~=2.31.0
+Requires-Dist: customtkinter~=5.2.1
+Requires-Dist: CTkMessagebox~=2.5
+Requires-Dist: PyQt5~=5.15.10
+Requires-Dist: qdarkstyle~=3.2
+Requires-Dist: Pillow~=10.1.0
+Requires-Dist: numpy~=1.25.2
+Requires-Dist: opencv-python~=4.8.1.78
+Requires-Dist: pandas~=2.1.2
+Requires-Dist: transformers~=4.34.1
+Requires-Dist: ultralytics~=8.1.47
+Requires-Dist: configparser~=6.0.0
+Requires-Dist: scipy~=1.11.3
+Requires-Dist: imgaug~=0.4.0
+Requires-Dist: validators~=0.22.0
+Requires-Dist: matplotlib~=3.8.0
+Requires-Dist: shapely~=2.0.2
+Requires-Dist: tensorflow~=2.14.0
+Requires-Dist: efficientnet~=1.0.0

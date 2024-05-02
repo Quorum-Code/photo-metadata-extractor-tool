@@ -274,7 +274,9 @@ class FileHandler:
         return True
 
     def __init_program_path(self, default_data: dict):
-        if os.getcwd().endswith("\\photo-metadata-extractor-tool") and os.path.exists("gui") and os.path.exists("oclc"):
+        if (os.getcwd().endswith("\\photo-metadata-extractor-tool") or
+            os.getcwd().endswith("\\pmet")) \
+                and os.path.exists("gui") and os.path.exists("oclc"):
             default_data["settings"]["program_path"] = os.getcwd()
             self.save_data(default_data)
         else:
