@@ -15,6 +15,7 @@ pandas~=2.1.2
 transformers~=4.34.1
 ultralytics~=8.1.47
 jiwer~=3.0.3
+onnxruntime~=1.17.0
 
 configparser~=6.0.0
 validators~=0.22.0

@@ -7,10 +7,10 @@ import os
 from PyQt5.QtCore import QThread, pyqtSignal
 from PIL import Image
 from customtkinter import filedialog
-import ocr_lines_new3
+import ocr
 from oclc.oclc_api import OCLCSession
 from file_handler import FileHandler
-
+import subprocess
 
 class ExtractionPage:
     def __init__(self, parent: customtkinter.CTk, file_handler: FileHandler):
@@ -50,6 +50,7 @@ class ExtractionPage:
                                                                   corner_radius=0,
                                                                   fg_color="transparent",
                                                                   command=self.__ask_photo_folder)
+
         self.select_photo_folder_button.grid(row=0, column=1, padx=10, pady=10)
 
         self.photo_folder_name = customtkinter.CTkLabel(self.photo_folder_frame,
@@ -147,6 +148,8 @@ class ExtractionPage:
             return
 
         self.__thread_object = OCRHandler()
+        self.__thread_object.progress_text = self.update_image_progress_text
+        self.__thread_object.update_progress_bar = self.update_image_progress_percent
         self.__thread_object.directory = self.__photo_folder
         self.__thread_object.is_finished.connect(self.__debug_is_finished)
         self.__thread_object.results_ready.connect(self.__debug_result_ready)
@@ -156,8 +159,14 @@ class ExtractionPage:
     def update_query_progress_percent(self, percent: float):
         self.query_progress_bar.set(percent)
 
+    def update_image_progress_text(self, text):
+        self.progress_text.configure(text=text)
+
     def update_query_progress_text(self, text):
         self.query_progress_text.configure(text=text)
+
+    def update_image_progress_percent(self, percent: float):
+        self.progress_bar.set(percent)
 
     def start_queries(self):
         # Start OCLC session
@@ -204,16 +213,20 @@ class OCRHandler(QThread):
     def __init__(self):
         super().__init__()
         self.directory = None
-
+        self.update_progress_bar = None
+        self.progress_text = None
         return
 
     def run(self):
         print("started extraction")
-        result = ocr_lines_new3.main(self.directory, self.progress_percent)
-        print(result)
-        self.results_ready.emit(result)
+        self.progress_text("Text Extraction in Progress...")
+        file_ct, result = ocr.main(self.directory, self.update_progress_bar)
+        self.progress_text("Text Extraction Complete")
+        print("before results_ready")
+        self.results_ready.emit("Text Extraction Complete")
+        print("after results_ready")
         self.is_finished.emit()
-        return result
+        return
 
 
 class QueryThread(QThread):

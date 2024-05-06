@@ -1,25 +1,24 @@
 import os
 import multiprocessing
 from ocr_utils import *
+import asyncio
 
 ### Global to facilitate progress bar for parallel processing of images
 count = 0
 
-def img_recognition(img_dir, total_images, progress_signal):
+def img_recognition(img_dir, p_in):
     """
     Function to perform the bulk of the text recognition tasks
 
     :param img_dir: list of image paths
     :param total_images: Number of images to be processed
-    :param progress_signal: Signal for GUI process bar
+    :param process_signal: Signal for GUI process bar
     :return: Dictionary with extracted data as {image path: extracted text}
     """
-    global count
 
     extractions = {}
-    
+    bar_img = cv2.imread("barsepimg.png")
     for img_path in img_dir:
-
         print("Beggining extraction  on image: ", img_path)
 
         ext_txt = ""
@@ -27,11 +26,9 @@ def img_recognition(img_dir, total_images, progress_signal):
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         pred = text_detection(img_path, ocr_obj)
-
         pred = get_distance(pred)
         pred = sorted(pred, key=lambda x:x['distance_y'])
         pred = list(distinguish_groups(pred))
-        bar_img = cv2.imread("barsepimg.png")
         for group in pred:
             group = list(distinguish_rows(group))
             image_crops = []
@@ -77,16 +74,31 @@ def img_recognition(img_dir, total_images, progress_signal):
 
         extractions[img_path] = ext_txt + " "
         print("Completed extraction on image: ", img_path)
-        count += 1
-        progress_signal.emit(count / total_images)
+        p_in.send(1)
 
+    p_in.send("done")
     return extractions
 
-@function_timer('main_process')
-def main(path, process_signal):
-    print("Beginning Script")
+async def update_prog_bar(prog_bar_func, total_images, p_out):
+    sum = 0
+    msg_comp_ct = 0
+    while True:
+        msg = p_out.recv()
+        if msg == 1:
+            sum += msg
+        else:
+            msg_comp_ct += 1
+        #print(sum, total_images)
+        prog_bar_func(sum/total_images)
+        if msg_comp_ct == 2:
+            break
 
+@function_timer('main_process')
+def main(path, update_progress_bar):
+    print("Beginning Script")
     #dirs = ['./tests/test_img_dir']
+
+    p_out, p_in = multiprocessing.Pipe()
 
     processed_file_count = 0
     with multiprocessing.Pool(processes=2) as pool:
@@ -96,7 +108,7 @@ def main(path, process_signal):
         img_dir = os.listdir(path)
         img_dir = [os.path.join(path, img) for img in img_dir]
 
-        validation = dir_validation(path)
+        validation = dir_validation(img_dir)
 
         if validation == 201:
             print("Selected data has odd number of images")
@@ -112,8 +124,14 @@ def main(path, process_signal):
         processed_file_count += total_images
         #halfpoint = False
         hp = total_images//2
-        collected_data_proc_1.append(pool.apply_async(img_recognition, (img_dir[:hp], total_images, process_signal)))
-        collected_data_proc_2.append(pool.apply_async(img_recognition, (img_dir[hp:], total_images, process_signal)))
+        collected_data_proc_1.append(pool.apply_async(img_recognition,
+                                                      (img_dir[:hp],
+                                                       p_in)))
+        collected_data_proc_2.append(pool.apply_async(img_recognition,
+                                                      (img_dir[hp:],
+                                                       p_in)))
+
+        asyncio.run(update_prog_bar(update_progress_bar, total_images, p_out))
 
         for obj in range(len(collected_data_proc_1)):
             extracted_data.append(collected_data_proc_1[obj].get())
@@ -125,15 +143,16 @@ def main(path, process_signal):
         #    halfpoint = True
         #    write_dataframe(extracted_data)
 
-        write_dataframe(extracted_data)
+        ext_pth = write_dataframe(extracted_data)
         pool.close()
         pool.join()
     
     print("Image Processing Completed")
-    return processed_file_count
+    return processed_file_count, ext_pth
+
 
 if multiprocessing.current_process().name != 'MainProcess':
     ocr_obj = ocr(load_ocr_models=True, load_field_classifier=False) 
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
