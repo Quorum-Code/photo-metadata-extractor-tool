@@ -3,6 +3,8 @@ import os
 from oclc.oclc_api import *
 
 
+# TODO: Corral into test an actual test suite
+
 class TestOCLCAPI(unittest.TestCase):
     def setUp(self):
         self.has_secrets = False

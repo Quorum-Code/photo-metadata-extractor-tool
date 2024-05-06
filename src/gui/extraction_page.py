@@ -1,4 +1,8 @@
+import time
+import typing
+
 import customtkinter
+from gui.page import Page
 from CTkMessagebox import CTkMessagebox
 import os
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -6,34 +10,27 @@ from PIL import Image
 from customtkinter import filedialog
 import ocr_lines_new3
 from oclc.oclc_api import OCLCSession
-from file_handler import FileHandler
+from local_data.file_handler import FileHandler
 
 
-class ExtractionPage:
+class ExtractionPage(Page):
     def __init__(self, parent: customtkinter.CTk, file_handler: FileHandler):
-        self.__parent: customtkinter.CTk = parent
+        super().__init__(parent, "Extraction")
+
         self.__file_handler: FileHandler = file_handler
         self.__file_character_limit = 40
         self.__photo_folder = ""
         self.__sudoc_csv = ""
         self.__file_icon_local_path = "icons\\folder-icon.png"
         # Reference to QThread must be stored or will be destroyed by garbage collector
-        self.__thread_object: OCRHanlder | None = None
+        self.__thread_object: OCRHandler | None = None
         # todo add error handling for no image found
         self.__file_icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.__file_icon_local_path)
         self.__file_icon = customtkinter.CTkImage(Image.open(self.__file_icon_path), size=(24, 24))
 
-        # Home frame
-        self.home_frame = customtkinter.CTkFrame(self.__parent, corner_radius=0, fg_color="transparent")
-        self.home_frame.grid_columnconfigure(0, weight=1)
-
-        self.home_text = customtkinter.CTkLabel(self.home_frame, text="Extraction",
-                                                font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.home_text.grid(row=0, column=0, padx=20, pady=20)
-
         # Sub Home frame - Photo folder frame
-        self.photo_folder_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0)
-        self.photo_folder_frame.grid(row=1, column=0, padx=10, pady=10)
+        self.photo_folder_frame = customtkinter.CTkFrame(self.frame, corner_radius=0)
+        self._insert_widget(self.photo_folder_frame)
 
         self.photo_folder_name = customtkinter.CTkLabel(self.photo_folder_frame, text="Photo Folder", width=80)
         self.photo_folder_name.grid(row=0, column=0, padx=10, pady=10)
@@ -56,8 +53,8 @@ class ExtractionPage:
         self.photo_folder_name.grid(row=0, column=2, padx=10, pady=10)
 
         # Process Subframe
-        self.process_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0, fg_color="transparent")
-        self.process_frame.grid(row=2, column=0, padx=10, pady=10)
+        self.process_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
+        self._insert_widget(self.process_frame)
 
         # Progress text
         self.progress_text = customtkinter.CTkLabel(self.process_frame, corner_radius=0,
@@ -74,8 +71,8 @@ class ExtractionPage:
         self.process_photo_button.grid(row=2, column=0, padx=10, pady=20)
 
         # Sub Home frame - SuDoc file frame
-        self.sudoc_file_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0)
-        self.sudoc_file_frame.grid(row=3, column=0, padx=10, pady=10)
+        self.sudoc_file_frame = customtkinter.CTkFrame(self.frame, corner_radius=0)
+        self._insert_widget(self.sudoc_file_frame)
 
         self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text="SuDoc CSV", width=80)
         self.sudoc_file_name.grid(row=0, column=0, padx=10, pady=10)
@@ -98,8 +95,8 @@ class ExtractionPage:
         self.sudoc_file_name.grid(row=0, column=2, padx=10, pady=10)
 
         # Process Subframe
-        self.query_frame = customtkinter.CTkFrame(self.home_frame, corner_radius=0, fg_color="transparent")
-        self.query_frame.grid(row=4, column=0, padx=10, pady=10)
+        self.query_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
+        self._insert_widget(self.query_frame)
 
         # Progress text
         self.query_progress_text = customtkinter.CTkLabel(self.query_frame, corner_radius=0,
@@ -143,12 +140,18 @@ class ExtractionPage:
             CTkMessagebox(title="ERROR", message="Please select a valid file.", icon="cancel")
             return
 
-        self.__thread_object = OCRHanlder()
+        self.__thread_object = OCRHandler()
         self.__thread_object.directory = self.__photo_folder
         self.__thread_object.is_finished.connect(self.__debug_is_finished)
         self.__thread_object.results_ready.connect(self.__debug_result_ready)
         self.__thread_object.progress_percent.connect(self.__debug_progress_percent)
         self.__thread_object.start()
+
+    def update_query_progress_percent(self, percent: float):
+        self.query_progress_bar.set(percent)
+
+    def update_query_progress_text(self, text):
+        self.query_progress_text.configure(text=text)
 
     def start_queries(self):
         # Start OCLC session
@@ -158,13 +161,18 @@ class ExtractionPage:
         else:
             print("NOT Authorized")
 
-        # Pass CSV filepath to OCLC session object
-        if oclc.query_csv_sudoc(self.__sudoc_csv):
-            print("Succeeded querying csv sudoc")
-        else:
-            print("FAILED")
+        self.__thread_object = QueryThread(oclc, self.__sudoc_csv,
+                                           self.update_query_progress_percent,
+                                           self.update_query_progress_text)
+        self.__thread_object.start()
 
-        print(f"SuDoc csv: {self.__sudoc_csv}")
+        # Pass CSV filepath to OCLC session object
+        # if oclc.query_csv_sudoc(self.__sudoc_csv):
+        #     print("Succeeded querying csv sudoc")
+        # else:
+        #     print("FAILED")
+        #
+        # print(f"SuDoc csv: {self.__sudoc_csv}")
 
         return
 
@@ -177,8 +185,11 @@ class ExtractionPage:
     def __debug_progress_percent(self, percent: float):
         print(f"percent: {percent}")
 
+    def __debug_progress_text(self, text: str):
+        print(f"text: {text}")
 
-class OCRHanlder(QThread):
+
+class OCRHandler(QThread):
     is_finished = pyqtSignal()
     single_result_ready = pyqtSignal(str)
     results_ready = pyqtSignal(str)
@@ -197,3 +208,26 @@ class OCRHanlder(QThread):
         self.results_ready.emit(result)
         self.is_finished.emit()
         return result
+
+
+class QueryThread(QThread):
+    def __init__(self, oclc: OCLCSession, csv_path: str,
+                 update_percent: typing.Callable, update_text: typing.Callable[[str], None]):
+        super().__init__()
+        self.__oclc = oclc
+        self.__csv_path = csv_path
+        self.__update_percent = update_percent
+        self.__update_text = update_text
+
+    def run(self):
+        print("started")
+        self.__update_text("Started querying...")
+        self.__update_percent(0)
+
+        self.__oclc.query_csv_sudoc(self.__csv_path, self.__update_percent)
+
+        self.__update_percent(1)
+
+        self.__update_text("Finished querying...")
+        print("finished")
+        return

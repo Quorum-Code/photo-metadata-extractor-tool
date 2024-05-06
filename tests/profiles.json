@@ -1,0 +1,36 @@
+{
+  "profiles": [
+    {
+      "name": "SuDoc",
+      "term": "SuDoc",
+      "query_type": "gn",
+      "trim": "DOCS ",
+      "results": [
+        {
+          "name": "title",
+          "rel": [
+            "title",
+            "mainTitles",
+            0,
+            "text"
+          ]
+        },
+        {
+          "name": "publicationDate",
+          "rel": [
+            "date",
+            "publicationDate"
+          ]
+        },
+        {
+          "name": "SuDoc",
+          "rel": [
+            "classification",
+            "govDoc",
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}
