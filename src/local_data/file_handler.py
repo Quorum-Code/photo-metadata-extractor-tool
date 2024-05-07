@@ -119,8 +119,26 @@ class FileHandler:
         # Load data as dict
         self.__json_data: dict = self.__load_json()
 
+        # Check if query profiles exist
+        self.__init_profiles()
+
         # Load secrets as dict
         self.__secrets: dict = self.__load_secrets()
+
+    def __init_profiles(self):
+        is_modified = False
+        if "query_profile" not in self.__json_data["settings"]:
+            is_modified = True
+            print("Config missing 'query_profile', repairing config...")
+            self.__json_data["settings"]["query_profile"] = copy.deepcopy(DEFAULT_SETTINGS["query_profile"])
+
+        if "query_profiles" not in self.__json_data["settings"]:
+            is_modified = True
+            print("Config missing 'query_profiles', repairing config...")
+            self.__json_data["settings"]["query_profiles"] = copy.deepcopy(DEFAULT_SETTINGS["query_profiles"])
+
+        if is_modified:
+            self.save_data(self.__json_data)
 
     def save_data(self, data: dict):
         with self.pmet_setting_file_path.open("w") as f:
@@ -193,6 +211,16 @@ class FileHandler:
 
     def get_query_settings(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["query"])
+
+    def get_query_term_name(self) -> str:
+        return self.__json_data["settings"]["query_profile"]
+
+    def get_query_profile(self) -> dict:
+        selected_profile = self.__json_data["settings"]["query_profile"]
+        for profile in self.__json_data["settings"]["query_profiles"]:
+            if profile["profile_name"] == selected_profile:
+                return profile
+        return {}
 
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]

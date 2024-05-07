@@ -30,31 +30,6 @@ class OCLCSession:
         self.__query_headers = self.__file_handler.get_query_headers()
         self.__query_parameters = self.__file_handler.get_query_parameters()
 
-        # Config settings
-        # self.config = configparser.ConfigParser()
-        # self.config.sections()
-        # self.config.read(self.config_file)
-        #
-        # # URLs
-        # self.token_url = self.config['URLS']['token_url']
-        # self.auth_url = self.config['URLS']['auth_url']
-        # self.metadata_service_url = self.config['URLS']['metadata_service_url']
-        #
-        # # Auth-token setup
-        # self.signature = self.get_signature()
-        # self.token_headers = self.get_auth_headers()
-        # self.token_body = self.get_auth_body()
-        #
-        # # Request Auth token
-        # self.auth_response = ""
-        # self.hasToken = False
-        # self.token = None
-        # self.request_auth_token()
-        #
-        # # Query setup
-        # self.query_headers = self.get_query_headers()
-        # self.query_body = self.get_query_body()
-
     def ready_session(self) -> bool:
         """
         Readies session by requesting an access token.
@@ -92,30 +67,29 @@ class OCLCSession:
         csv_reader = CSVReader(csv_file_path)
 
         # get list of sudocs
-        sudocs = csv_reader.get_query_terms()
-        query_terms = csv_reader.get_query_term("SuDoc")
-
-        print(f"Terms: {sudocs}")
-        for sudoc in sudocs:
-            print("a_sudoc: " + sudoc)
+        term_name = self.__file_handler.get_query_term_name()
+        query_terms = csv_reader.get_query_term(term_name)
 
         # filter sudocs
-        filtered_sudocs = self.__filter_sudocs(sudocs)
+        # TODO: make optional within config
+        filtered_terms = self.__filter_sudocs(query_terms)
 
         csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
-        jp = json_parser.JSONParser(json_parser.DEFAULT_KEY_MAP)
+
+        query_profile = self.__file_handler.get_query_profile()
+        jp = json_parser.JSONParser(query_profile["key_map"])
 
         # iterate through list of sudocs
         result: list[dict[str]] = []
-        for i in range(len(filtered_sudocs)):
-            text = self.__query_term(filtered_sudocs[i])
+        for i in range(len(filtered_terms)):
+            text = self.__query_term(filtered_terms[i])
             jd = json.loads(text)
 
             row: dict[str, str] = {}
             if "bibRecords" in jd and len(jd["bibRecords"]) > 0:
                 row = jp.get_values(jd["bibRecords"][0])
-            row["Query Term"] = sudocs[i]
-            row["Filtered Term"] = filtered_sudocs[i]
+            row["Query Term"] = query_terms[i]
+            row["Filtered Term"] = filtered_terms[i]
 
             print(f"ROW: {row}")
             result.append(row)
