@@ -13,7 +13,39 @@ DEFAULT_SECRETS_FILE_PATH = Path.home().joinpath("pmet/.secrets")
 
 DEFAULT_SETTINGS = {
     "program_path": "",
-    "style": "system"
+    "style": "system",
+    "query_profile": "SuDoc",
+    "query_profiles": [
+        {
+            "name": "SuDoc",
+            "key_map": [
+                {
+                    "name": "SuDoc",
+                    "path": [
+                        "classification",
+                        "govDoc",
+                        "0"
+                    ]
+                },
+                {
+                    "name": "Title",
+                    "path": [
+                        "title",
+                        "mainTitles",
+                        "0",
+                        "text"
+                    ]
+                },
+                {
+                    "name": "PublicationDate",
+                    "path": [
+                        "date",
+                        "publicationDate"
+                    ]
+                }
+            ]
+        }
+    ]
 }
 
 DEFAULT_CONFIGURATION = {
