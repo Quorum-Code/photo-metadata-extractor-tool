@@ -17,7 +17,7 @@ DEFAULT_SETTINGS = {
     "query_profile": "SuDoc",
     "query_profiles": [
         {
-            "name": "SuDoc",
+            "profile_name": "SuDoc",
             "key_map": [
                 {
                     "name": "SuDoc",

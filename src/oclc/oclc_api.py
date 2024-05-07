@@ -114,12 +114,14 @@ class OCLCSession:
             row: dict[str, str] = {}
             if "bibRecords" in jd and len(jd["bibRecords"]) > 0:
                 row = jp.get_values(jd["bibRecords"][0])
+            row["Query Term"] = sudocs[i]
+            row["Filtered Term"] = filtered_sudocs[i]
 
             print(f"ROW: {row}")
             result.append(row)
-        # print(f"jp_cols: {jp.get_cols()}")
-        # csv_writer.write_data(jp.get_cols(), result)
-        # csv_writer.
+        col_names = ["Query Term", "Filtered Term"] + jp.get_cols()
+
+        csv_writer.write_data(col_names, result)
 
         self.__query_parameters['q'] = ""
 
