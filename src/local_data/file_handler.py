@@ -4,7 +4,6 @@ import os
 import codecs
 import copy
 import sys
-import json_parser
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
