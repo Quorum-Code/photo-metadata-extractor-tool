@@ -106,10 +106,10 @@ def small_test():
             ]
         }
     }
-    json_text = json.dumps(input_json)
+    # json_text = json.dumps(input_json)
 
     jp = JSONParser(map_config)
-    row = jp.get_values(json_text)
+    row = jp.get_values(input_json)
     print(row)
 
     return
