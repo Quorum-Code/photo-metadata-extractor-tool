@@ -3,8 +3,11 @@
 secrets
 
 # Process files
+extractions/*
+extracted_data/*
 *.csv
-ml_pipeline_timings.txt
+ml_pipeline_diagnostics/*
+tests/*
 
 # Dev Environment Folders
 .idea
@@ -14,3 +17,4 @@ __pycache__/*
 oclc/__pycache__
 ocr_models
 venv
+ml_models/*
