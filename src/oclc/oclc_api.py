@@ -93,6 +93,8 @@ class OCLCSession:
 
         # get list of sudocs
         sudocs = csv_reader.get_query_terms()
+        query_terms = csv_reader.get_query_term("SuDoc")
+
         print(f"Terms: {sudocs}")
         for sudoc in sudocs:
             print("a_sudoc: " + sudoc)
