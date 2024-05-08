@@ -142,7 +142,7 @@ class ExtractionPage(Page):
             CTkMessagebox(title="ERROR", message="Please select a valid file.", icon="cancel")
             return
 
-        self.__thread_object = OCRHandler()
+        self.__thread_object = OCRHandler(self.__set_query_file)
         self.__thread_object.progress_text = self.update_image_progress_text
         self.__thread_object.update_progress_bar = self.update_image_progress_percent
         self.__thread_object.directory = self.__photo_folder
@@ -150,6 +150,11 @@ class ExtractionPage(Page):
         self.__thread_object.results_ready.connect(self.__debug_result_ready)
         self.__thread_object.progress_percent.connect(self.__debug_progress_percent)
         self.__thread_object.start()
+
+    def __set_query_file(self, file_path: str):
+        self.__sudoc_csv = file_path
+        formatted_path = self.__format_file_text(file_path)
+        self.sudoc_file_name.configure(text=formatted_path)
 
     def update_query_progress_percent(self, percent: float):
         self.query_progress_bar.set(percent)
@@ -205,11 +210,13 @@ class OCRHandler(QThread):
     results_ready = pyqtSignal(str)
     progress_percent = pyqtSignal(float)
 
-    def __init__(self):
+    def __init__(self, update_file: typing.Callable[[str], None]):
         super().__init__()
         self.directory = None
         self.update_progress_bar = None
         self.progress_text = None
+
+        self.update_file = update_file
         return
 
     def run(self):
@@ -221,6 +228,7 @@ class OCRHandler(QThread):
         self.results_ready.emit("Text Extraction Complete")
         print("after results_ready")
         self.is_finished.emit()
+        self.update_file(result)
         return
 
 

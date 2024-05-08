@@ -191,6 +191,11 @@ class OCLCSession:
         punctuation_translator = str.maketrans("", "", string.punctuation)
 
         for i in range(len(sudocs)):
+            upped = sudocs[i].upper()
+            index = upped.index("DOCS ")
+            if index == 0:
+                sudocs[i] = sudocs[i][5:]
+
             filtered_sudocs.append(sudocs[i].translate(whitespace_translator).translate(punctuation_translator))
 
         return filtered_sudocs

@@ -3,7 +3,7 @@ import os
 
 
 class CSVReader:
-    DELIMITER = "|"
+    DELIMITER = ","
 
     def __init__(self, path):
         self.__path: str = path
@@ -21,7 +21,7 @@ class CSVReader:
             return
 
         with open(self.__path, mode='r') as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter='|')
+            csv_reader = csv.reader(csv_file, delimiter=CSVReader.DELIMITER)
             for row in csv_reader:
                 self.__rows.append(row)
 
