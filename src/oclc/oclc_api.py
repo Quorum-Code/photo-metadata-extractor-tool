@@ -189,12 +189,13 @@ class OCLCSession:
 
         whitespace_translator = str.maketrans("", "", string.whitespace)
         punctuation_translator = str.maketrans("", "", string.punctuation)
+        trim_term = "DOCS "
 
         for i in range(len(sudocs)):
             upped = sudocs[i].upper()
-            index = upped.index("DOCS ")
+            index = upped.index(trim_term)
             if index == 0:
-                sudocs[i] = sudocs[i][5:]
+                sudocs[i] = sudocs[i][len(trim_term):]
 
             filtered_sudocs.append(sudocs[i].translate(whitespace_translator).translate(punctuation_translator))
 
