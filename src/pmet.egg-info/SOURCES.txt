@@ -1,0 +1,16 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+src/oclc/__init__.py
+src/oclc/api_demo.py
+src/oclc/oclc_api.py
+src/oclc/oclc_handler.py
+src/oclc/query.py
+src/pmet.egg-info/PKG-INFO
+src/pmet.egg-info/SOURCES.txt
+src/pmet.egg-info/dependency_links.txt
+src/pmet.egg-info/not-zip-safe
+src/pmet.egg-info/requires.txt
+src/pmet.egg-info/top_level.txt
