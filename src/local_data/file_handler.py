@@ -44,7 +44,8 @@ DEFAULT_SETTINGS = {
                 }
             ]
         }
-    ]
+    ],
+    "scale": "150%"
 }
 
 DEFAULT_CONFIGURATION = {
@@ -187,8 +188,17 @@ class FileHandler:
         self.__json_data["settings"]["style"] = style
         self.__save_json()
 
+    def save_scale(self, scale: str):
+        self.__json_data["settings"]["scale"] = scale
+        self.__save_json()
+
     def get_style(self) -> str:
         return self.__json_data["settings"]["style"]
+
+    def get_scale(self) -> str:
+        if "scale" in self.__json_data["settings"]:
+            return self.__json_data["settings"]["scale"]
+        return "100%"
 
     def get_settings(self) -> dict:
         return copy.deepcopy(self.__json_data["settings"])
