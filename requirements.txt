@@ -19,7 +19,6 @@ ultralytics==8.1.47
 jiwer~=3.0.3
 onnxruntime~=1.17.0
 
-
 configparser==6.0.0
 scipy==1.11.3
 imgaug==0.4.0

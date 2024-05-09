@@ -45,7 +45,6 @@ class ExtractionPage(Page):
                                                                   corner_radius=0,
                                                                   fg_color="transparent",
                                                                   command=self.__ask_photo_folder)
-
         self.select_photo_folder_button.grid(row=0, column=1, padx=10, pady=10)
 
         self.photo_folder_name = customtkinter.CTkLabel(self.photo_folder_frame,
