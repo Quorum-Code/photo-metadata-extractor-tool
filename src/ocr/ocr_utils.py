@@ -11,7 +11,7 @@ import datetime
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 import ultralytics 
 from onnxruntime import InferenceSession
-from ocr_test import *
+from ocr.ocr_test import *
 import glob
 
 ### Call to skip warning function directly above and further warning suppression ###

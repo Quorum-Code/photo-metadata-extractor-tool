@@ -2,7 +2,7 @@ from jiwer import cer
 from string import punctuation
 import pandas as pd
 import numpy as np
-from ocr_utils import *
+from ocr.ocr_utils import *
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning) 

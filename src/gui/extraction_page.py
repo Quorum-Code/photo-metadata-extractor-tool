@@ -8,7 +8,7 @@ import os
 from PyQt5.QtCore import QThread, pyqtSignal
 from PIL import Image
 from customtkinter import filedialog
-import ocr
+from ocr import ocr
 from oclc.oclc_api import OCLCSession
 import subprocess
 from local_data.file_handler import FileHandler
