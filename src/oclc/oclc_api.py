@@ -5,6 +5,7 @@ import json
 import base64
 import configparser
 import string
+import datetime as dt
 
 import local_data.json_parser
 from local_data.file_handler import FileHandler
@@ -34,6 +35,9 @@ class OCLCSession:
         """
         Readies session by requesting an access token.
         """
+        if self.try_cached_token():
+            return True
+
         # inject signature into token_body
         self.__token_headers["Authorization"] = f"Basic {self.__signature}"
 
@@ -53,6 +57,9 @@ class OCLCSession:
                 token = token_response_json["access_token"]
                 self.__token = token
                 self.__query_headers["Authorization"] = f"Bearer {self.__token}"
+
+                self.__file_handler.set_cached_token(token_response_json["access_token"])
+                self.__file_handler.set_cached_token_time(token_response_json["expires_at"])
                 return True
             else:
                 print("no access token in response")
@@ -61,9 +68,26 @@ class OCLCSession:
             print("no response")
             return False
 
+    def try_cached_token(self) -> bool:
+        tkn = self.__file_handler.get_cached_token()
+        if tkn == "":
+            # No token stored
+            return False
+
+        tkn_time = self.__file_handler.get_cached_token_time().replace("Z", "")
+        tkn_date = dt.datetime.strptime(tkn_time, "%Y-%m-%d %H:%M:%S") - dt.timedelta(minutes=1)
+        now = dt.datetime.utcnow()
+
+        if tkn_date > now:
+            # Valid token
+            self.__token = tkn
+            self.__query_headers["Authorization"] = f"Bearer {self.__token}"
+            return True
+        # Invalid token
+        return False
+
     def query_csv_sudoc(self, csv_file_path: str, update_progress_percent: typing.Callable[[float], None]) -> bool:
         # Create csv object
-        # csv_doc = CSVDocument(self.__file_handler, file_path=csv_file_path, read_only=True)
         csv_reader = CSVReader(csv_file_path)
 
         # get list of sudocs
@@ -193,7 +217,12 @@ class OCLCSession:
 
         for i in range(len(sudocs)):
             upped = sudocs[i].upper()
-            index = upped.index(trim_term)
+
+            try:
+                index = upped.index(trim_term)
+            except ValueError:
+                index = -1
+
             if index == 0:
                 sudocs[i] = sudocs[i][len(trim_term):]
 

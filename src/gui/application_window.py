@@ -17,7 +17,7 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure(1, weight=1)
 
         # Scale options
-        self.scale_options = ["50%", "75%", "100%", "150%", "200%", "250%"]
+        self.scale_options = ["50%", "75%", "100%", "125%", "150%", "200%", "250%"]
 
         """ **************
         Nav Bar Frame 
