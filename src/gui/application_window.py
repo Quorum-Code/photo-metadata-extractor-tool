@@ -10,11 +10,14 @@ class App(customtkinter.CTk):
 
         # Window settings
         self.title("Photo Metadata Extractor Tool")
-        self.geometry("800x600")
+        self.geometry("1200x800")
 
         # Side button setup
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
+
+        # Scale options
+        self.scale_options = ["50%", "75%", "100%", "125%", "150%", "200%", "250%"]
 
         """ **************
         Nav Bar Frame 
@@ -80,6 +83,15 @@ class App(customtkinter.CTk):
         self.style_menu.set(style)
         self.change_style_event(style)
         self.style_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
+
+        # Style menu
+        self.scale_menu = customtkinter.CTkOptionMenu(self.navigation_frame,
+                                                      values=self.scale_options,
+                                                      command=self.change_scale_event)
+        scale = self.filehandler.get_scale()
+        self.scale_menu.set(scale)
+        self.change_scale_event(scale)
+        self.scale_menu.grid(row=7, column=0, padx=20, pady=20, sticky="s")
 
         # INITIALIZING PAGES
         # - Initialize Getting Started frame
@@ -156,3 +168,8 @@ class App(customtkinter.CTk):
     def change_style_event(self, style: str):
         customtkinter.set_appearance_mode(style)
         self.filehandler.save_style(style)
+
+    def change_scale_event(self, size: str):
+        self.filehandler.save_scale(size)
+        size_float = int(size.replace("%", "")) / 100
+        customtkinter.set_widget_scaling(size_float)

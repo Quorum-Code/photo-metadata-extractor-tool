@@ -44,7 +44,8 @@ DEFAULT_SETTINGS = {
                 }
             ]
         }
-    ]
+    ],
+    "scale": "125%"
 }
 
 DEFAULT_CONFIGURATION = {
@@ -187,8 +188,37 @@ class FileHandler:
         self.__json_data["settings"]["style"] = style
         self.__save_json()
 
+    def save_scale(self, scale: str):
+        self.__json_data["settings"]["scale"] = scale
+        self.__save_json()
+
+    def get_cached_token(self) -> str:
+        if "cached_token" in self.__json_data["settings"]:
+            return self.__json_data["settings"]["cached_token"]
+        return ""
+
+    def get_cached_token_time(self) -> str:
+        if "cached_token_time" in self.__json_data["settings"]:
+            return self.__json_data["settings"]["cached_token_time"]
+        return ""
+
+    def set_cached_token(self, token):
+        self.__json_data["settings"]["cached_token"] = token
+        print("saved cached_token")
+        self.__save_json()
+
+    def set_cached_token_time(self, token):
+        self.__json_data["settings"]["cached_token_time"] = token
+        print("saved cached_token_time")
+        self.__save_json()
+
     def get_style(self) -> str:
         return self.__json_data["settings"]["style"]
+
+    def get_scale(self) -> str:
+        if "scale" in self.__json_data["settings"]:
+            return self.__json_data["settings"]["scale"]
+        return "100%"
 
     def get_settings(self) -> dict:
         return copy.deepcopy(self.__json_data["settings"])
@@ -300,6 +330,8 @@ class FileHandler:
     def set_secrets(self, client_id: str, client_secret: str):
         self.__save_secrets(client_id, client_secret)
         self.__secrets = self.__load_secrets()
+
+
 
     def load_default_config(self):
         self.__json_data["configuration"] = DEFAULT_CONFIGURATION
