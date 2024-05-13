@@ -50,6 +50,9 @@ class CSVWriter:
 
         return path
 
+    def get_abs_path(self) -> str:
+        return self.__path
+
 
 def small_test():
     cw = CSVWriter("csv_writer_test.csv", "./")

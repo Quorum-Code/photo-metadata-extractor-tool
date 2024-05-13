@@ -40,6 +40,7 @@ class OCLCSession:
 
         # inject signature into token_body
         self.__token_headers["Authorization"] = f"Basic {self.__signature}"
+        print(self.__token_headers["Authorization"])
 
         # create token request
         token_request = requests.Request("POST", url=self.__token_url,
@@ -86,7 +87,7 @@ class OCLCSession:
         # Invalid token
         return False
 
-    def query_csv_sudoc(self, csv_file_path: str, update_progress_percent: typing.Callable[[float], None]) -> bool:
+    def query_csv_sudoc(self, csv_file_path: str, update_progress_percent: typing.Callable[[float], None]) -> str:
         # Create csv object
         csv_reader = CSVReader(csv_file_path)
 
@@ -123,7 +124,7 @@ class OCLCSession:
 
         self.__query_parameters['q'] = ""
 
-        return True
+        return csv_writer.get_abs_path()
 
     def __add_sudoc_record(self, doc: CSVDocument, raw_sudoc: str, json_text: str):
         if json_text == "":
