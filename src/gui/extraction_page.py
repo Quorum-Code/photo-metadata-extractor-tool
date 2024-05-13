@@ -241,10 +241,23 @@ class QueryThread(QThread):
         self.__update_text("Started querying...")
         self.__update_percent(0)
 
-        self.__oclc.query_csv_sudoc(self.__csv_path, self.__update_percent)
+        res_path = self.__oclc.query_csv_sudoc(self.__csv_path, self.__update_percent)
+        res_path = res_path.replace("/", "\\")
 
         self.__update_percent(1)
 
         self.__update_text("Finished querying...")
         print("finished")
+
+        msg = CTkMessagebox(title="Query Results",
+                            width=500,
+                            height=350,
+                            message="Open results in file explorer?",
+                            icon="question",
+                            option_1="Yes",
+                            option_2="No")
+        print(r'explorer /select, ' + '"' + res_path + '"')
+        if msg.get() == "Yes":
+            subprocess.Popen(r'explorer /select, ' + '"' + res_path + '"')
+
         return
