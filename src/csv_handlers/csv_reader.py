@@ -3,7 +3,7 @@ import os
 
 
 class CSVReader:
-    DELIMITER = "|"
+    DELIMITER = ","
 
     def __init__(self, path):
         self.__path: str = path
@@ -21,7 +21,7 @@ class CSVReader:
             return
 
         with open(self.__path, mode='r') as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter='|')
+            csv_reader = csv.reader(csv_file, delimiter=CSVReader.DELIMITER)
             for row in csv_reader:
                 self.__rows.append(row)
 
@@ -39,6 +39,14 @@ class CSVReader:
 
     def get_query_terms(self) -> list[str]:
         return self.get_col(0)
+
+    def get_query_term(self, term_name: str) -> list[str]:
+        try:
+            term_index = self.__col_names.index(term_name)
+            return self.get_col(term_index)
+        except ValueError:
+            print(f"No column named '{term_name}' found in the selected CSV...")
+            return []
 
     def get_col(self, index: int) -> list[str]:
         col_data: list[str] = []

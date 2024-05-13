@@ -10,7 +10,7 @@ def generate_filename() -> str:
 class CSVWriter:
     FILE_PREFIX = "extraction_"
     TIME_FORMAT = "%m-%d-%Y_%H.%M.%S"
-    DELIMITER = "|"
+    DELIMITER = ","
     FILE_SUFFIX = ".csv"
 
     def __init__(self, folder_path: str, file_name=""):
@@ -46,7 +46,7 @@ class CSVWriter:
 
         if os.path.exists(path):
             print("csv writer file already exists, generating new file")
-            path = os.path.join(self.__folder_path,  self.__generate_filename())
+            path = os.path.join(self.__folder_path,  generate_filename())
 
         return path
 

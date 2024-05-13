@@ -1,0 +1,47 @@
+.
+└── photo-metadata-extractor-tool/
+    ├── ml_models
+    ├── documents
+    ├── ...
+    ├── tests
+    ├── ...
+    ├── barsepimg.png
+    ├── ocr.py
+    ├── ocr_utils.py
+    └── ocr_test.py
+
+ml_models
+    ├── label_classifiers
+    	└── field_onnx_etc_model.onnx
+    ├── text_detectors
+    	└── yolotextdet.pt
+    ├── label_classifiers
+    	└── yolo_text_type_clf.pt
+    └── ocr_models
+ 	├── hw_ocr_models
+		├── config.json
+		├── generation_config.json
+		├── merges.txt
+		├── preprocessor_config.json
+		├── pytorch_model.bin
+		├── special_tokens_map.json
+		├── tokenizer.json
+		├── tokenizer_config.json
+		└── vocab.json
+	└── typed_ocr_models	
+		├── config.json
+		├── generation_config.json
+		├── merges.txt
+		├── preprocessor_config.json
+		├── pytorch_model.bin
+		├── special_tokens_map.json
+		├── tokenizer.json
+		├── tokenizer_config.json
+		└── vocab.json
+
+tests
+    ├── labels.csv
+    ├── test_img_dir
+    	├── 0.png
+	├── ...
+	└── 217.png

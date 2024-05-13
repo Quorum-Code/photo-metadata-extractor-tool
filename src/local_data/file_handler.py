@@ -4,7 +4,6 @@ import os
 import codecs
 import copy
 import sys
-import json_parser
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
@@ -13,7 +12,40 @@ DEFAULT_SECRETS_FILE_PATH = Path.home().joinpath("pmet/.secrets")
 
 DEFAULT_SETTINGS = {
     "program_path": "",
-    "style": "system"
+    "style": "system",
+    "query_profile": "SuDoc",
+    "query_profiles": [
+        {
+            "profile_name": "SuDoc",
+            "key_map": [
+                {
+                    "name": "SuDoc",
+                    "path": [
+                        "classification",
+                        "govDoc",
+                        "0"
+                    ]
+                },
+                {
+                    "name": "Title",
+                    "path": [
+                        "title",
+                        "mainTitles",
+                        "0",
+                        "text"
+                    ]
+                },
+                {
+                    "name": "PublicationDate",
+                    "path": [
+                        "date",
+                        "publicationDate"
+                    ]
+                }
+            ]
+        }
+    ],
+    "scale": "125%"
 }
 
 DEFAULT_CONFIGURATION = {
@@ -87,8 +119,26 @@ class FileHandler:
         # Load data as dict
         self.__json_data: dict = self.__load_json()
 
+        # Check if query profiles exist
+        self.__init_profiles()
+
         # Load secrets as dict
         self.__secrets: dict = self.__load_secrets()
+
+    def __init_profiles(self):
+        is_modified = False
+        if "query_profile" not in self.__json_data["settings"]:
+            is_modified = True
+            print("Config missing 'query_profile', repairing config...")
+            self.__json_data["settings"]["query_profile"] = copy.deepcopy(DEFAULT_SETTINGS["query_profile"])
+
+        if "query_profiles" not in self.__json_data["settings"]:
+            is_modified = True
+            print("Config missing 'query_profiles', repairing config...")
+            self.__json_data["settings"]["query_profiles"] = copy.deepcopy(DEFAULT_SETTINGS["query_profiles"])
+
+        if is_modified:
+            self.save_data(self.__json_data)
 
     def save_data(self, data: dict):
         with self.pmet_setting_file_path.open("w") as f:
@@ -138,8 +188,37 @@ class FileHandler:
         self.__json_data["settings"]["style"] = style
         self.__save_json()
 
+    def save_scale(self, scale: str):
+        self.__json_data["settings"]["scale"] = scale
+        self.__save_json()
+
+    def get_cached_token(self) -> str:
+        if "cached_token" in self.__json_data["settings"]:
+            return self.__json_data["settings"]["cached_token"]
+        return ""
+
+    def get_cached_token_time(self) -> str:
+        if "cached_token_time" in self.__json_data["settings"]:
+            return self.__json_data["settings"]["cached_token_time"]
+        return ""
+
+    def set_cached_token(self, token):
+        self.__json_data["settings"]["cached_token"] = token
+        print("saved cached_token")
+        self.__save_json()
+
+    def set_cached_token_time(self, token):
+        self.__json_data["settings"]["cached_token_time"] = token
+        print("saved cached_token_time")
+        self.__save_json()
+
     def get_style(self) -> str:
         return self.__json_data["settings"]["style"]
+
+    def get_scale(self) -> str:
+        if "scale" in self.__json_data["settings"]:
+            return self.__json_data["settings"]["scale"]
+        return "100%"
 
     def get_settings(self) -> dict:
         return copy.deepcopy(self.__json_data["settings"])
@@ -161,6 +240,16 @@ class FileHandler:
 
     def get_query_settings(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["query"])
+
+    def get_query_term_name(self) -> str:
+        return self.__json_data["settings"]["query_profile"]
+
+    def get_query_profile(self) -> dict:
+        selected_profile = self.__json_data["settings"]["query_profile"]
+        for profile in self.__json_data["settings"]["query_profiles"]:
+            if profile["profile_name"] == selected_profile:
+                return profile
+        return {}
 
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]
@@ -241,6 +330,8 @@ class FileHandler:
     def set_secrets(self, client_id: str, client_secret: str):
         self.__save_secrets(client_id, client_secret)
         self.__secrets = self.__load_secrets()
+
+
 
     def load_default_config(self):
         self.__json_data["configuration"] = DEFAULT_CONFIGURATION
