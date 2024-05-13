@@ -10,11 +10,18 @@ class GettingStartedPage(Page):
         self.extraction_text = ("Select a folder containing photos to extract SuDocs from. The program will create a "
                                 "CSV file which contains extracted text")
 
-        self.__extraction_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
-        self.__extraction_text = customtkinter.CTkLabel(self.__extraction_frame,
-                                                        text=self.extraction_text)
-        self.__extraction_text.grid(row=0, column=0, padx=self._padx, pady=self._pady)
-        self._insert_widget(self.__extraction_frame)
+        self.getting_started_text = ("Before querying a CSV make sure to set your OCLC credentials in the settings "
+                                     "page. If you're processing SuDoc numbered documents then no changes need to be"
+                                     "made to the default profile. \n Find more about the program here: "
+                                     "https://github.com/Quorum-Code/photo-metadata-extractor-tool/wiki")
+
+        self.__getting_started_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
+        self.__getting_started_text = customtkinter.CTkTextbox(self.__getting_started_frame, width=400)
+        self.__getting_started_text.insert("0.0", self.getting_started_text)
+        self.__getting_started_text.configure(state="disabled")
+        self.__getting_started_text.grid(row=0, column=0, padx=self._padx, pady=self._pady)
+
+        self._insert_widget(self.__getting_started_frame)
 
         # TODO: Links to documentation
 
