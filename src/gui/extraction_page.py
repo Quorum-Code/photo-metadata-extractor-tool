@@ -173,21 +173,17 @@ class ExtractionPage(Page):
         if oclc.ready_session():
             print("Authorized")
         else:
+            # Popup message and exit
             print("NOT Authorized")
+            CTkMessagebox(title="ERROR", message="Invalid credentials or error getting tokens. Make sure your "
+                                                 "credentials are properly set in the 'Settings' tab.", icon="cancel",
+                          width=500, height=350)
+            return
 
         self.__thread_object = QueryThread(oclc, self.__sudoc_csv,
                                            self.update_query_progress_percent,
                                            self.update_query_progress_text)
         self.__thread_object.start()
-
-        # Pass CSV filepath to OCLC session object
-        # if oclc.query_csv_sudoc(self.__sudoc_csv):
-        #     print("Succeeded querying csv sudoc")
-        # else:
-        #     print("FAILED")
-        #
-        # print(f"SuDoc csv: {self.__sudoc_csv}")
-
         return
 
     def __debug_is_finished(self):
