@@ -365,15 +365,18 @@ class FileHandler:
         return True
 
     def __init_program_path(self, default_data: dict):
-        if (os.getcwd().endswith("\\photo-metadata-extractor-tool") or
-            os.getcwd().endswith("\\pmet")) \
-                and os.path.exists("gui") and os.path.exists("oclc"):
-            default_data["settings"]["program_path"] = os.getcwd()
-            self.save_data(default_data)
-        else:
-            print("The program must be started at its directory to be initialized."
-                  " (After the first run it should be able to be run from any directory.)")
-            sys.exit("ERROR: Bad pwd")
+        default_data["settings"]["program_path"] = os.getcwd()
+        self.save_data(default_data)
+
+        # if (os.getcwd().endswith("\\photo-metadata-extractor-tool") or
+        #     os.getcwd().endswith("\\pmet")) \
+        #         and os.path.exists("gui") and os.path.exists("oclc"):
+        #     default_data["settings"]["program_path"] = os.getcwd()
+        #     self.save_data(default_data)
+        # else:
+        #     print("The program must be started at its directory to be initialized."
+        #           " (After the first run it should be able to be run from any directory.)")
+        #     sys.exit("ERROR: Bad pwd")
 
     def __init_secrets_file(self):
         if not self.pmet_secrets_file_path.exists():
