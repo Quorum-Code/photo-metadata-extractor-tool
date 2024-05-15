@@ -103,6 +103,8 @@ DEFAULT_KEY_MAP = {
 
 class FileHandler:
     def __init__(self):
+        print("initializing FileHandler...")
+
         # File paths
         self.pmet_folder_path: Path = DEFAULT_DB_FOLDER_PATH
         self.pmet_setting_file_path: Path = DEFAULT_DB_FILE_PATH
