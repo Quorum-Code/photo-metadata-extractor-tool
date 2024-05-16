@@ -1,5 +1,5 @@
 import customtkinter
-from gui.page import Page
+from src.gui.page import Page
 
 
 class GettingStartedPage(Page):
