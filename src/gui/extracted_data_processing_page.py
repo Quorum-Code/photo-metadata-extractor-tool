@@ -3,7 +3,7 @@ from src.gui.page import Page
 import pandas as pd
 import tksheet
 import os
-from PIL import Image
+from PIL import Image, ExifTags
 from customtkinter import filedialog
 from CTkMessagebox import CTkMessagebox
 
@@ -173,7 +173,22 @@ class ProcessExtractedDataPage(Page):
         if img.width > img.height:
             img = img.rotate(270)
         '''
-        curr_img = customtkinter.CTkImage(img, size = (450,450))
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation] == 'Orientation':
+                break
+
+        exif = img._getexif()
+
+        if exif != None:
+
+            if exif[orientation] == 3:
+                img = img.rotate(180, expand=True)
+            elif exif[orientation] == 6:
+                img = img.rotate(270, expand=True)
+            elif exif[orientation] == 8:
+                img = img.rotate(90, expand=True)
+
+        curr_img = customtkinter.CTkImage(img,  size = (450,450))
         self.curr_sel_img_frame.configure(image=curr_img, text='', padx=0)
         self.update_curr_selected_img_pth(os.path.basename(path))
 
