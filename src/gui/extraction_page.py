@@ -1,4 +1,3 @@
-import time
 import typing
 
 import customtkinter
@@ -75,7 +74,7 @@ class ExtractionPage(Page):
         self.sudoc_file_frame = customtkinter.CTkFrame(self.frame, corner_radius=0)
         self._insert_widget(self.sudoc_file_frame)
 
-        self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text="SuDoc CSV", width=80)
+        self.sudoc_file_name = customtkinter.CTkLabel(self.sudoc_file_frame, text="Query CSV", width=80)
         self.sudoc_file_name.grid(row=0, column=0, padx=10, pady=10)
 
         self.select_sudoc_file_button = customtkinter.CTkButton(self.sudoc_file_frame,
