@@ -1,5 +1,5 @@
 import customtkinter
-from src.gui import extraction_page, settings_page, config_page, getting_started_page, extracted_data_processing_page
+from src.gui import extraction_page, settings_page, config_page, getting_started_page, extracted_data_processing_page, query_profile
 import src.local_data.file_handler as fh
 
 class App(customtkinter.CTk):
@@ -23,7 +23,7 @@ class App(customtkinter.CTk):
         ************** """
         self.navigation_frame = customtkinter.CTkFrame(self, corner_radius=0)
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
-        self.navigation_frame.grid_rowconfigure(5, weight=1)
+        self.navigation_frame.grid_rowconfigure(6, weight=1)
 
         # NAVIGATION BUTTONS
         # - Getting Started
@@ -86,6 +86,18 @@ class App(customtkinter.CTk):
                                                               command=self.configuration_button_event)
         self.__configuration_button.grid(row=4, column=0, sticky="ew")
 
+        # - Query Profiles
+        self.__query_profile_button = customtkinter.CTkButton(self.navigation_frame,
+                                                              corner_radius=0,
+                                                              height=40,
+                                                              border_spacing=10,
+                                                              text="Query Profiles",
+                                                              fg_color="transparent",
+                                                              text_color=("gray10", "gray90"),
+                                                              anchor="w",
+                                                              command=self.query_profile_button_event)
+        self.__query_profile_button.grid(row=5, column=0, sticky="ew")
+
         # Style menu
         self.style_menu = customtkinter.CTkOptionMenu(self.navigation_frame,
                                                       values=["Light", "Dark", "System"],
@@ -122,6 +134,9 @@ class App(customtkinter.CTk):
         # - Initialize Configuration frame
         self.configuration = config_page.ConfigurationPage(self, self.filehandler)
 
+        # - Initialize Query Profile frame
+        self.__query_profile = query_profile.QueryProfilePage(self, self.filehandler)
+
         # - Initialize Info frame
         self.info_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
 
@@ -141,6 +156,8 @@ class App(customtkinter.CTk):
             fg_color=("gray75", "gray25") if name == "configuration" else "transparent")
         self.extraction_processing_button.configure(
             fg_color=("gray75", "gray25") if name == "extraction_processing" else "transparent")
+        self.__query_profile_button.configure(
+            fg_color=("gray75", "gray25") if name == "query_profile" else "transparent")
 
         # Clear focus
         self.focus()
@@ -171,6 +188,11 @@ class App(customtkinter.CTk):
         else:
             self.__extraction_processing_page.frame.grid_forget()
 
+        if name == "query_profile":
+            self.__query_profile.frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.__query_profile.frame.grid_forget()
+
 
     def __getting_started_button_event(self):
         self.select_frame_by_name("getting_started")
@@ -183,6 +205,9 @@ class App(customtkinter.CTk):
 
     def configuration_button_event(self):
         self.select_frame_by_name("configuration")
+
+    def query_profile_button_event(self):
+        self.select_frame_by_name("query_profile")
 
     def info_button_event(self):
         self.select_frame_by_name("info")
