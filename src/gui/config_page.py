@@ -3,8 +3,8 @@ import json
 import customtkinter
 from CTkMessagebox import CTkMessagebox
 
-import local_data.file_handler as fh
-from gui.page import Page
+import src.local_data.file_handler as fh
+from src.gui.page import Page
 
 
 class ConfigurationPage(Page):

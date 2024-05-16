@@ -7,11 +7,11 @@ import configparser
 import string
 import datetime as dt
 
-import local_data.json_parser
-from local_data.file_handler import FileHandler
-from csv_handlers.csv_handler import CSVDocument, SuDocRecord
-from csv_handlers.csv_reader import *
-from csv_handlers.csv_writer import *
+import src.local_data.json_parser
+from src.local_data.file_handler import FileHandler
+from src.csv_handlers.csv_handler import CSVDocument, SuDocRecord
+from src.csv_handlers.csv_reader import *
+from src.csv_handlers.csv_writer import *
 
 
 class OCLCSession:

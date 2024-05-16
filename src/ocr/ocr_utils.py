@@ -11,8 +11,9 @@ import datetime
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
 import ultralytics 
 from onnxruntime import InferenceSession
-from ocr.ocr_test import *
+from src.ocr.ocr_test import *
 import glob
+#from heic2png import HEIC2PNG
 
 ### Call to skip warning function directly above and further warning suppression ###
 import warnings
@@ -195,15 +196,22 @@ def dir_validation(dir):
 
     supported_file_types = [ 'bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
                             'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
-                            'exr', 'hdr', 'pic'
+                            'exr', 'hdr', 'pic', 'JPG'
                             ]
 
     if (len(dir) % 2) == 1:
         return 201
-    for file in dir:
-        ext = file.split(".")[-1]
+
+    #print(dir)
+
+    for idx  in range(len(dir)):
+        ext = dir[idx].split(".")[-1]
+
         if ext not in supported_file_types:
+
             return 202
+
+    #print(dir)
     return 200
 
 def hconcat_resize(img_list, interpolation = cv2.INTER_CUBIC): 
