@@ -1,5 +1,5 @@
-import gui.application_window as aw
-import local_data.file_handler as fh
+import src.gui.application_window as aw
+import src.local_data.file_handler as fh
 
 
 class PMET:

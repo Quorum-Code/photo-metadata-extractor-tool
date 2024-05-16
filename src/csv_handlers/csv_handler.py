@@ -1,7 +1,7 @@
 import csv
 import time
 import os
-import local_data.file_handler as fh
+import src.local_data.file_handler as fh
 
 FOLDER_NAME = "extractions"
 FILE_PREFIX = "extraction_"

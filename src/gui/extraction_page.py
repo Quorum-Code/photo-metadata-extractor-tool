@@ -2,16 +2,16 @@ import time
 import typing
 
 import customtkinter
-from gui.page import Page
+from src.gui.page import Page
 from CTkMessagebox import CTkMessagebox
 import os
 from PyQt5.QtCore import QThread, pyqtSignal
 from PIL import Image
 from customtkinter import filedialog
-from ocr import ocr
-from oclc.oclc_api import OCLCSession
+from src.ocr import ocr
+from src.oclc.oclc_api import OCLCSession
 import subprocess
-from local_data.file_handler import FileHandler
+from src.local_data.file_handler import FileHandler
 
 
 class ExtractionPage(Page):
@@ -219,9 +219,7 @@ class OCRHandler(QThread):
         self.progress_text("Text Extraction in Progress...")
         file_ct, result = ocr.main(self.directory, self.update_progress_bar)
         self.progress_text("Text Extraction Complete")
-        print("before results_ready")
         self.results_ready.emit("Text Extraction Complete")
-        print("after results_ready")
         self.is_finished.emit()
         self.update_file(result)
         return

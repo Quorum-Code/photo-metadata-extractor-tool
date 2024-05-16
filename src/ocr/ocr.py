@@ -1,6 +1,6 @@
 import os
 import multiprocessing
-from ocr.ocr_utils import *
+from src.ocr.ocr_utils import *
 import asyncio
 
 ### Global to facilitate progress bar for parallel processing of images

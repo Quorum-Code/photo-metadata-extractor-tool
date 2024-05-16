@@ -1,4 +1,4 @@
-from oclc import *
+from src.oclc import *
 # from oclc_api import *
 # from query import *
 

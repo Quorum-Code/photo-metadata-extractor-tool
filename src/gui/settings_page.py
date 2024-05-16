@@ -1,10 +1,10 @@
 import customtkinter
-from gui.page import Page
-import local_data.file_handler
+from src.gui.page import Page
+import src.local_data.file_handler
 
 
 class SettingsPage(Page):
-    def __init__(self, parent, filehandler: local_data.file_handler.FileHandler):
+    def __init__(self, parent, filehandler: src.local_data.file_handler.FileHandler):
         super().__init__(parent, "Settings")
 
         self.__filehandler = filehandler
