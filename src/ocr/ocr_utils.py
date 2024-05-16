@@ -195,8 +195,7 @@ def dir_validation(dir):
 
     supported_file_types = [ 'bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
                             'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
-                            'exr', 'hdr', 'pic'
-                            ]
+                            'exr', 'hdr', 'pic', 'JPG'
 
     if (len(dir) % 2) == 1:
         return 201
