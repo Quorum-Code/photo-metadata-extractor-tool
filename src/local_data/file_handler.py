@@ -258,6 +258,13 @@ class FileHandler:
                 return profile
         return {}
 
+    def get_query_profile_names(self) -> list[str]:
+        profiles: list[str] = []
+        for profile in self.__json_data["settings"]["query_profiles"]:
+            profiles.append(profile["profile_name"])
+
+        return profiles
+
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]
 
