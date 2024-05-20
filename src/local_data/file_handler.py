@@ -1,9 +1,7 @@
-import configparser
 import json
 import os
 import codecs
 import copy
-import sys
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
@@ -17,6 +15,13 @@ DEFAULT_SETTINGS = {
     "query_profiles": [
         {
             "profile_name": "SuDoc",
+            "trim_terms": [
+              "DOCS.",
+              "DOCS",
+              "DOC"
+            ],
+            "removeWhiteSpace": True,
+            "removePunctuation": True,
             "key_map": [
                 {
                     "name": "SuDoc",
