@@ -6,10 +6,10 @@ import numpy as np
 import math
 import cv2
 import pandas as pd
-import string 
+import string
 import datetime
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, utils
-import ultralytics 
+import ultralytics
 from onnxruntime import InferenceSession
 from src.ocr.ocr_test import *
 import glob
@@ -17,6 +17,7 @@ import glob
 
 ### Call to skip warning function directly above and further warning suppression ###
 import warnings
+
 
 def warn(*args, **kwargs):
     """
@@ -26,8 +27,9 @@ def warn(*args, **kwargs):
     """
     pass
 
+
 warnings.warn = warn
-warnings.filterwarnings("ignore", category=FutureWarning) 
+warnings.filterwarnings("ignore", category=FutureWarning)
 utils.logging.set_verbosity_error()
 ###
 
@@ -42,6 +44,7 @@ timers = ('main_process',
               'text_type_classification',
               'field_classification')
 '''
+
 
 def function_timer(timer_target):
     """
@@ -58,8 +61,8 @@ def function_timer(timer_target):
             if timer_target == 'main_process':
                 os.makedirs("./ml_pipeline_diagnostics/", exist_ok=True)
                 data_dir = get_out_dir_pth(init=True)
-                os.makedirs(data_dir, exist_ok = True)
-            else: 
+                os.makedirs(data_dir, exist_ok=True)
+            else:
                 data_dir = get_out_dir_pth()
             start = time.time()
             if timer_target == 'main_process':
@@ -75,7 +78,7 @@ def function_timer(timer_target):
                 time_file.write("Number of Images: " + str(result) + "\n")
                 final_summary['total_proc_time'] = end_timing
                 time_file.write("Processing Time: " + str(end_timing) + "\n")
-                avg_time = end_timing/result
+                avg_time = end_timing / result
                 final_summary['proc_time_per_img'] = avg_time
                 time_file.write("Average Processing Time Per Image: " + str(avg_time))
                 time_file.close()
@@ -101,7 +104,7 @@ def function_timer(timer_target):
                     avg = time_data.mean(axis=0).to_string(name=False,
                                                            index=False,
                                                            dtype=False)
-                    time_file.write("Average: " + str(avg))    
+                    time_file.write("Average: " + str(avg))
                     time_file.close()
                     final_summary[timer_list] = avg
                 final_summary = pd.DataFrame(final_summary, index=[0])
@@ -112,12 +115,15 @@ def function_timer(timer_target):
             else:
                 time_file.write(str(end_timing) + "\n")
             return result
+
         return wrap
+
     return outer_wrap
+
 
 class ocr():
     def __init__(self, load_ocr_models=True, load_field_classifier=False):
-        
+
         """
         An OCR object to hold and load the necessary machine learning models.
 
@@ -147,7 +153,7 @@ class ocr():
         :return: Text detection, text recognition, and classification models
         """
         print("Loading Text Type Classifier")
-      
+
         self.writing_classifier = ultralytics.YOLO('./ml_models/text_type_classifiers/yolo_text_type_clf.pt').to(device)
 
         print("Loading Text Detector")
@@ -165,7 +171,7 @@ class ocr():
         self.model_hw = VisionEncoderDecoderModel.from_pretrained(
             './ml_models/ocr_models/hw_ocr_models'
         ).to(device)
-        
+
         print("Successfully Loaded Models")
 
     @function_timer('model_load')
@@ -177,9 +183,10 @@ class ocr():
         """
 
         self.field_classifier = InferenceSession("./ml_models/label_classifiers/field_onnx_etc_model.onnx" \
-                        , providers=["CPUExecutionProvider"])
+                                                 , providers=["CPUExecutionProvider"])
 
-def get_out_dir_pth(init = False):
+
+def get_out_dir_pth(init=False):
     """
         Function to find or create the directory where the OCR pipeline performance reports will go.
 
@@ -190,13 +197,17 @@ def get_out_dir_pth(init = False):
     base_dir = "./ml_pipeline_diagnostics/"
 
     if init == True:
-        if len([os.path.basename(path)[3:] for path in glob.iglob(base_dir + 'run[0-9]*') if os.path.isdir(path)])>0:
-             return base_dir + "run" + str(max([int(os.path.basename(path)[3:]) for path in glob.iglob(base_dir + 'run[0-9]*') if os.path.isdir(path)])+1) + "/" 
+        if len([os.path.basename(path)[3:] for path in glob.iglob(base_dir + 'run[0-9]*') if os.path.isdir(path)]) > 0:
+            return base_dir + "run" + str(
+                max([int(os.path.basename(path)[3:]) for path in glob.iglob(base_dir + 'run[0-9]*') if
+                     os.path.isdir(path)]) + 1) + "/"
         else:
-            return base_dir + "run0/"       
+            return base_dir + "run0/"
     else:
-        if len([os.path.basename(path)[3:] for path in glob.iglob(base_dir + 'run[0-9]*') if os.path.isdir(path)])>0:
-            return base_dir + "run" + str(max([int(os.path.basename(path)[3:]) for path in glob.iglob(base_dir + 'run[0-9]*') if os.path.isdir(path)]))+"/" 
+        if len([os.path.basename(path)[3:] for path in glob.iglob(base_dir + 'run[0-9]*') if os.path.isdir(path)]) > 0:
+            return base_dir + "run" + str(
+                max([int(os.path.basename(path)[3:]) for path in glob.iglob(base_dir + 'run[0-9]*') if
+                     os.path.isdir(path)])) + "/"
         else:
             return base_dir + "run0/"
 
@@ -209,27 +220,28 @@ def dir_validation(dir):
     :return: error code
     """
 
-    supported_file_types = [ 'bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
+    supported_file_types = ['bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
                             'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
                             'exr', 'hdr', 'pic', 'JPG'
                             ]
 
+    # TODO change for single photo processing
     if (len(dir) % 2) == 1:
         return 201
 
     #print(dir)
 
-    for idx  in range(len(dir)):
+    for idx in range(len(dir)):
         ext = dir[idx].split(".")[-1]
 
         if ext not in supported_file_types:
-
             return 202
 
     #print(dir)
     return 200
 
-def hconcat_resize(img_list, interpolation = cv2.INTER_CUBIC): 
+
+def hconcat_resize(img_list, interpolation=cv2.INTER_CUBIC):
     """
     Function to resize images and concatenate images horizontally
 
@@ -239,18 +251,19 @@ def hconcat_resize(img_list, interpolation = cv2.INTER_CUBIC):
     :return: Concatenated image
     """
 
-    h_min = min(img.shape[0]  
-                for img in img_list) 
-    
-    im_list_resize = [cv2.resize(img, 
+    h_min = min(img.shape[0]
+                for img in img_list)
+
+    im_list_resize = [cv2.resize(img,
                                  (int(img.shape[1] * h_min / img.shape[0])
                                   if (img.shape[1] * h_min / img.shape[0]) > 1
-                                  else img.shape[1], 
+                                  else img.shape[1],
                                   h_min),
-                                 interpolation = interpolation)  
-                      for img in img_list] 
+                                 interpolation=interpolation)
+                      for img in img_list]
 
-    return cv2.hconcat(im_list_resize) 
+    return cv2.hconcat(im_list_resize)
+
 
 def most_frequent(lst):
     """
@@ -264,6 +277,7 @@ def most_frequent(lst):
     index = np.argmax(counts)
     return unique[index]
 
+
 @function_timer('text_recognition')
 def text_recognition(image, label, ocr_obj):
     """
@@ -274,7 +288,7 @@ def text_recognition(image, label, ocr_obj):
     :return: The extracted text.
     """
 
-    if label in [ 'typed', 'cover' ]:
+    if label in ['typed', 'cover']:
         pixel_values = ocr_obj.processor_typed(image, return_tensors='pt').pixel_values.to(device)
         generated_ids = ocr_obj.model_typed.generate(pixel_values)
         generated_text = ocr_obj.processor_typed.batch_decode(generated_ids, skip_special_tokens=True)[0]
@@ -283,6 +297,7 @@ def text_recognition(image, label, ocr_obj):
         generated_ids = ocr_obj.model_hw.generate(pixel_values)
         generated_text = ocr_obj.processor_hw.batch_decode(generated_ids, skip_special_tokens=True)[0]
     return generated_text
+
 
 @function_timer('text_detection')
 def text_detection(img, ocr_obj):
@@ -293,11 +308,12 @@ def text_detection(img, ocr_obj):
     :return: List of boxes for the detected text
     """
 
-    results = ocr_obj.detector.predict(source = img, imgsz=768, conf = .07,
-                       iou = .12, augment = True, max_det = 1000, 
-                       agnostic_nms = True, verbose = False)
-    
-    return [ box.numpy().boxes.xyxy.tolist() for box in results]
+    results = ocr_obj.detector.predict(source=img, imgsz=768, conf=.07,
+                                       iou=.12, augment=True, max_det=1000,
+                                       agnostic_nms=True, verbose=False)
+
+    return [box.numpy().boxes.xyxy.tolist() for box in results]
+
 
 def distinguish_groups(lst):
     """
@@ -318,13 +334,14 @@ def distinguish_groups(lst):
                 if added == True:
                     break
                 if abs(sublists[j][k]['dist_from_origin'] - lst[i]['dist_from_origin']) <= \
-                      (sublists[j][k]['height'] + lst[i]['height']) / 2: 
+                        (sublists[j][k]['height'] + lst[i]['height']) / 2:
                     sublists[j].append(lst[i])
                     added = True
 
         if added == False:
             sublists.append([lst[i]])
     return sublists
+
 
 def distinguish_rows(lst):
     """
@@ -335,19 +352,20 @@ def distinguish_rows(lst):
     sublists = []
     if len(lst) == 1:
         sublists.append(lst[0])
-    for i in range(0, len(lst)-1):
-        if abs(lst[i+1]['distance_y'] - lst[i]['distance_y']) <=  \
-           (lst[i]['height'] + lst[i+1]['height']) / 4: 
+    for i in range(0, len(lst) - 1):
+        if abs(lst[i + 1]['distance_y'] - lst[i]['distance_y']) <= \
+                (lst[i]['height'] + lst[i + 1]['height']) / 4:
             if lst[i] not in sublists:
                 sublists.append(lst[i])
-            sublists.append(lst[i+1])
+            sublists.append(lst[i + 1])
         else:
             if i == 0:
-                sublists.append(lst[i])        
+                sublists.append(lst[i])
             yield sublists
-            sublists = [lst[i+1]]
+            sublists = [lst[i + 1]]
     yield sublists
-    
+
+
 def get_distance(preds):
     """
     Gathers measurements for a list of bounding boxes for further processing
@@ -360,12 +378,12 @@ def get_distance(preds):
     idx = 0
     for group in preds[0]:
         top_left_x = group[0]
-        top_left_y = group[1] 
+        top_left_y = group[1]
         bottom_right_x = group[2]
         bottom_right_y = group[3]
-        center_x = (top_left_x + bottom_right_x)/2
-        center_y = (top_left_y + bottom_right_y)/2
-        dist_from_origin = math.dist([x0,y0], [.2*center_x, 1.8*center_y])
+        center_x = (top_left_x + bottom_right_x) / 2
+        center_y = (top_left_y + bottom_right_y) / 2
+        dist_from_origin = math.dist([x0, y0], [.2 * center_x, 1.8 * center_y])
         distance_y = center_y - y0
         distance_x = center_x - x0
         height = abs(top_left_y - bottom_right_y)
@@ -378,9 +396,10 @@ def get_distance(preds):
             'distance_y': distance_y,
             'distance_x': distance_x,
             'height': height
-            })
+        })
         idx = idx + 1
     return detections
+
 
 @function_timer('text_type_classification')
 def text_classification(img, ocr_obj):
@@ -390,10 +409,11 @@ def text_classification(img, ocr_obj):
     :param img: Image with text
     :return: Label from resulting classification
     """
-    
-    label = ocr_obj.writing_classifier(img, verbose = False)
+
+    label = ocr_obj.writing_classifier(img, verbose=False)
 
     return 'handwritten' if label[0].probs.top1 == 0 else 'typed'
+
 
 @function_timer('field_classification')
 def text_feature_extractor(value, ocr_obj):
@@ -403,7 +423,7 @@ def text_feature_extractor(value, ocr_obj):
     :param value: Text string
     :return: A list of values
     """
-    value=str(value)
+    value = str(value)
     text_length = len(value)
     words = value.count(" ") + 1
     numbers = sum(c.isdigit() for c in value)
@@ -413,17 +433,18 @@ def text_feature_extractor(value, ocr_obj):
         num_text_ratio = 0
         punc_text_ratio = 0
     else:
-        num_text_ratio = numbers/text_length
-        punc_text_ratio = punctuation/text_length
-        
+        num_text_ratio = numbers / text_length
+        punc_text_ratio = punctuation / text_length
+
     avg_word_length = sum(len(word) for word in value) / words
-    
-    ext_features = np.reshape(  [text_length, words, num_text_ratio,
-                                 avg_word_length, punc_text_ratio] , (1, -1))
-    
+
+    ext_features = np.reshape([text_length, words, num_text_ratio,
+                               avg_word_length, punc_text_ratio], (1, -1))
+
     output_name = ocr_obj.field_classifier.get_inputs()[0].name
     field = ocr_obj.field_classifier.run(None, {output_name: ext_features.astype(np.float32)})[0]
     return field[0]
+
 
 def pub_year_extraction(data):
     """
@@ -434,9 +455,10 @@ def pub_year_extraction(data):
     """
     pub_year = ""
     for phrase in data.split():
-        if phrase.isdigit() and (1600 <= int(phrase) <= datetime.datetime.today().year+1):
+        if phrase.isdigit() and (1600 <= int(phrase) <= datetime.datetime.today().year + 1):
             pub_year = phrase
     return pub_year
+
 
 def merge_dicts(data):
     """
@@ -450,6 +472,7 @@ def merge_dicts(data):
         merged_dict.update(data[idx])
     return merged_dict
 
+
 def crop_label_writer(img_path, crop_labels):
     """
     Function to write handwritten/printed inference results given from its original image
@@ -461,7 +484,8 @@ def crop_label_writer(img_path, crop_labels):
     new_df = pd.DataFrame(list((zip(crop_labels, [img_path]))))
     outpth = get_out_dir_pth() + "text_type_label_data.csv"
     new_df.to_csv(outpth,
-                   mode='a', index=False, header=False)
+                  mode='a', index=False, header=False)
+
 
 def write_dataframe(data, output_type):
     """
@@ -473,12 +497,13 @@ def write_dataframe(data, output_type):
     """
 
     print("Writing Out Data to CSV")
-    ocr_obj = ocr(load_ocr_models=False, load_field_classifier=True) 
+    ocr_obj = ocr(load_ocr_models=False, load_field_classifier=True)
     init_datapath = './extracted_data'
     datapath = "extracted_data/extracted_data.csv"
 
     if os.path.isfile(datapath):
-        os.rename(datapath, str("extracted_data/extracted_data_moved_on_"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".csv"))
+        os.rename(datapath, str("extracted_data/extracted_data_moved_on_" + datetime.datetime.now().strftime(
+            "%Y-%m-%d_%H-%M-%S") + ".csv"))
 
     os.makedirs(init_datapath, exist_ok=True)
     data = merge_dicts(data)
@@ -494,6 +519,7 @@ def write_dataframe(data, output_type):
     print("Completed Writing Step")
     return datapath
 
+
 def write_dataframe_single(data, datapath):
     output_data = pd.DataFrame(columns=['ID', 'extracted_text', 'Publication Year',
                                         'Error Code', 'Query Status',
@@ -507,11 +533,12 @@ def write_dataframe_single(data, datapath):
               'Publication Year': pub_year,
               'Image 1 Path': key
               }])],
-            ignore_index=True)
+                                ignore_index=True)
 
     output_data.to_csv(datapath, index=False, mode="a")
 
     return datapath
+
 
 def write_dataframe_pair(data, ocr_obj, label_out_file, datapath):
     output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year',
@@ -554,7 +581,7 @@ def write_dataframe_pair(data, ocr_obj, label_out_file, datapath):
                   'Image 1 Ext': img_1_ext,
                   'Image 2 Ext': img_2_ext
                   }])],
-                ignore_index=True)
+                                    ignore_index=True)
 
             title_key = sudoc_key = text_type_1_val \
                 = text_type_2_val = text_type_1_key \
