@@ -102,7 +102,7 @@ class OCLCSession:
         csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
 
         query_profile = self.__file_handler.get_query_profile()
-        jp = local_data.json_parser.JSONParser(query_profile["key_map"])
+        jp = src.local_data.json_parser.JSONParser(query_profile["key_map"])
 
         # iterate through list of sudocs
         result: list[dict[str]] = []
