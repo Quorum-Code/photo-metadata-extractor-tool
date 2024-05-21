@@ -1,3 +1,5 @@
+import sys
+
 import customtkinter
 from src.gui.page import Page
 import src.local_data.file_handler
@@ -42,9 +44,10 @@ class SettingsPage(Page):
 
         # Todo set event to save default
         self.process_mode = customtkinter.CTkOptionMenu(self.style_frame,
-                                                        values=["Single-Photo", "Pair-Photo"],
-                                                        command=self.__set_process_mode)
+                                                                  values=["Single-Photo", "Pair-Photo"],
+                                                                  command=self.__output_type_dd_change)
         self.process_mode.grid(row=0, column=1, padx=10, pady=10)
+        self.output_type = self.process_mode.get()
         # Todo set it to the saved value
 
         # Process mode frames
@@ -70,10 +73,18 @@ class SettingsPage(Page):
 
         self.__set_process_mode("Single-Photo")
 
+    import sys
+
+    def __output_type_dd_change(self, value):
+        self.output_type = value
+
+
     def __save_secrets_event(self):
         self.__filehandler.set_secrets(self.client_textbox.get(), self.secret_textbox.get())
 
     def __set_process_mode(self, mode: str):
+        self.__output_type_dd_change(mode)
+
         # forget all others
         if mode == "Single-Photo":
             self.single_search_frame.grid(row=3, column=0, padx=10, pady=10)

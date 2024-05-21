@@ -94,7 +94,7 @@ async def update_prog_bar(prog_bar_func, total_images, p_out):
             break
 
 @function_timer('main_process')
-def main(path, update_progress_bar):
+def main(path, update_progress_bar, output_type):
     print("Beginning Script")
     #dirs = ['./tests/test_img_dir']
 
@@ -118,7 +118,7 @@ def main(path, update_progress_bar):
             print("Selected data has an invalid file type")
             return
 
-        img_dir.sort(key=lambda x: os.path.getctime(x))
+        img_dir.sort()
 
         total_images = len(img_dir)
         processed_file_count += total_images
@@ -143,13 +143,11 @@ def main(path, update_progress_bar):
         #    halfpoint = True
         #    write_dataframe(extracted_data)
 
-        ext_pth = write_dataframe(extracted_data)
+        ext_pth = write_dataframe(extracted_data, output_type)
         pool.close()
         pool.join()
-    
     print("Image Processing Completed")
-    return processed_file_count, ext_pth
-
+    return processed_file_count, ext_pth, output_type
 
 if multiprocessing.current_process().name != 'MainProcess':
     ocr_obj = ocr(load_ocr_models=True, load_field_classifier=False) 
