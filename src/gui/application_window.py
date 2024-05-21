@@ -108,16 +108,20 @@ class App(customtkinter.CTk):
         # - Initialize Getting Started frame
         self.__getting_started = getting_started_page.GettingStartedPage(self)
 
+        # - Initialize Settings frame
+        self.settings = settings_page.SettingsPage(self, self.filehandler)
+
         # - Initialize Home frame
-        self.__extraction_page = extraction_page.ExtractionPage(self, self.filehandler)
+        self.__extraction_page = extraction_page.ExtractionPage(self,
+                                                                self.filehandler,
+                                                                self.settings)
+
         self.process_folder = "None"
         self.sudoc_file = "None"
 
         # - Initialize Extracted Data Processing frame
-        self.__extraction_processing_page = extracted_data_processing_page.ProcessExtractedDataPage(self)
-
-        # - Initialize Settings frame
-        self.settings = settings_page.SettingsPage(self, self.filehandler)
+        self.__extraction_processing_page = extracted_data_processing_page.ProcessExtractedDataPage(self,
+                                                                                                    self.settings)
 
         # - Initialize Configuration frame
         self.configuration = config_page.ConfigurationPage(self, self.filehandler)

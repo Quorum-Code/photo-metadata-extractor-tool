@@ -1,3 +1,5 @@
+import sys
+
 import customtkinter
 from src.gui.page import Page
 import src.local_data.file_handler
@@ -43,13 +45,20 @@ class SettingsPage(Page):
         # Todo set event to save default
         self.default_style_dropdown = customtkinter.CTkOptionMenu(self.style_frame,
                                                                   values=["Single-Photo", "Pair-Photo"],
-                                                                  command=None)
+                                                                  command=self.__output_type_dd_change)
         self.default_style_dropdown.grid(row=0, column=1, padx=10, pady=10)
+        self.output_type = self.default_style_dropdown.get()
         # Todo set it to the saved value
 
         # Process mode, sudoc, sudoc+cover, cover
 
         # Search by sudoc, title
+
+    import sys
+
+    def __output_type_dd_change(self, value):
+        self.output_type = value
+
 
     def __save_secrets_event(self):
         # get client id

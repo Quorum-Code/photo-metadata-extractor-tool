@@ -34,12 +34,14 @@ utils.logging.set_verbosity_error()
 ### The device with which to run image recognition functions on
 device = 'cpu'
 
+'''
 timers = ('main_process',
-          'model_load',
-          'text_recognition',
-          'text_detection',
-          'text_type_classification',
-          'field_classification')
+              'model_load',
+              'text_recognition',
+              'text_detection',
+              'text_type_classification',
+              'field_classification')
+'''
 
 def function_timer(timer_target):
     """
@@ -61,7 +63,7 @@ def function_timer(timer_target):
                 data_dir = get_out_dir_pth()
             start = time.time()
             if timer_target == 'main_process':
-                result, ext_pth = func(*args, **kwargs)
+                result, ext_pth, output_type = func(*args, **kwargs)
             else:
                 result = func(*args, **kwargs)
             end_timing = time.time() - start
@@ -77,6 +79,19 @@ def function_timer(timer_target):
                 final_summary['proc_time_per_img'] = avg_time
                 time_file.write("Average Processing Time Per Image: " + str(avg_time))
                 time_file.close()
+                if output_type == "Single-Photo":
+                    timers = ('main_process',
+                              'model_load',
+                              'text_recognition',
+                              'text_detection',
+                              'text_type_classification')
+                elif output_type == "Pair-Photo":
+                    timers = ('main_process',
+                              'model_load',
+                              'text_recognition',
+                              'text_detection',
+                              'text_type_classification',
+                              'field_classification')
                 for timer_list in timers:
                     if timer_list in ('main_process', 'model_load'):
                         continue
@@ -448,7 +463,7 @@ def crop_label_writer(img_path, crop_labels):
     new_df.to_csv(outpth,
                    mode='a', index=False, header=False)
 
-def write_dataframe(data):
+def write_dataframe(data, output_type):
     """
     Function to write extracted data out to a csv
 
@@ -465,21 +480,50 @@ def write_dataframe(data):
     if os.path.isfile(datapath):
         os.rename(datapath, str("extracted_data/extracted_data_moved_on_"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".csv"))
 
-    label_out_pth = get_out_dir_pth() + "field_label_data.csv"
-    label_out_file = open(label_out_pth, 'a')
-
     os.makedirs(init_datapath, exist_ok=True)
     data = merge_dicts(data)
-    output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year', 
-                                        'Path', 'Error Code','Query Status',
-                                        'Sudoc Image', 'Title Image', 
+
+    if output_type == 'Pair-Photo':
+        label_out_pth = get_out_dir_pth() + "field_label_data.csv"
+        label_out_file = open(label_out_pth, 'a')
+        datapath = write_dataframe_pair(data, ocr_obj, label_out_file, datapath)
+
+    elif output_type == "Single-Photo":
+        datapath = write_dataframe_single(data, datapath)
+
+    print("Completed Writing Step")
+    return datapath
+
+def write_dataframe_single(data, datapath):
+    output_data = pd.DataFrame(columns=['ID', 'extracted_text', 'Publication Year',
+                                        'Error Code', 'Query Status',
+                                        'Image 1 Path'
+                                        ])
+    for idx, key in enumerate(data):
+        pub_year = pub_year_extraction(data[key])
+        output_data = pd.concat([output_data, pd.DataFrame(
+            [{'ID': idx,
+              'extracted_text': data[key],
+              'Publication Year': pub_year,
+              'Image 1 Path': key
+              }])],
+            ignore_index=True)
+
+    output_data.to_csv(datapath, index=False, mode="a")
+
+    return datapath
+
+def write_dataframe_pair(data, ocr_obj, label_out_file, datapath):
+    output_data = pd.DataFrame(columns=['ID', 'Title', 'SuDoc', 'Publication Year',
+                                        'Path', 'Error Code', 'Query Status',
+                                        'Sudoc Image', 'Title Image',
                                         'Image 1 Path', 'Image 2 Path',
                                         'Image 1 Ext', 'Image 2 Ext'])
-    
-    #output_data = pd.DataFrame(columns=['extract', 'text_type'])
-    title_key = sudoc_key = text_type_1_val\
-              = text_type_2_val = text_type_1_key\
-              = text_type_2_key = pub_year = ""
+
+    title_key = sudoc_key = text_type_1_val \
+        = text_type_2_val = text_type_1_key \
+        = text_type_2_key = pub_year = ""
+
     for idx, key in enumerate(data):
         text_type = text_feature_extractor(data[key], ocr_obj)
         if text_type == 'title':
@@ -489,8 +533,8 @@ def write_dataframe(data):
         elif text_type == 'sudoc':
             text_type_2_key = 'SuDoc'
             pub_year = pub_year_extraction(data[key])
-            #data[key] = data[key] #.replace(" ", "")
-            #if data[key][:4].lower() == 'docs':
+            # data[key] = data[key] #.replace(" ", "")
+            # if data[key][:4].lower() == 'docs':
             #    data[key] = data[key][4:]
             text_type_2_val = data[key].strip()
             sudoc_key = key
@@ -500,10 +544,10 @@ def write_dataframe(data):
             img_2_ext = data[key]
             output_data = pd.concat([output_data, pd.DataFrame(
                 [{'ID': int((idx - 1) / 2),
-                   text_type_1_key: text_type_1_val, 
-                   text_type_2_key: text_type_2_val,
-                  'Publication Year': pub_year, 
-                  'Sudoc Image': sudoc_key, 
+                  text_type_1_key: text_type_1_val,
+                  text_type_2_key: text_type_2_val,
+                  'Publication Year': pub_year,
+                  'Sudoc Image': sudoc_key,
                   'Title Image': title_key,
                   'Image 1 Path': img_1_pth,
                   'Image 2 Path': img_2_pth,
@@ -511,17 +555,17 @@ def write_dataframe(data):
                   'Image 2 Ext': img_2_ext
                   }])],
                 ignore_index=True)
-            
-            title_key = sudoc_key = text_type_1_val\
-                      = text_type_2_val = text_type_1_key\
-                      = text_type_2_key = pub_year = ""
+
+            title_key = sudoc_key = text_type_1_val \
+                = text_type_2_val = text_type_1_key \
+                = text_type_2_key = pub_year = ""
 
         else:
             img_1_pth = key
             img_1_ext = data[key]
 
-        label_out_file.write( key + "," + str(data[key].replace(",", "")) + "," + text_type + "\n")
+        label_out_file.write(key + "," + str(data[key].replace(",", "")) + "," + text_type + "\n")
 
     output_data.to_csv(datapath, index=False, mode="a")
-    print("Completed Writing Step")
+
     return datapath

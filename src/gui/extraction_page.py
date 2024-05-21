@@ -15,13 +15,14 @@ from src.local_data.file_handler import FileHandler
 
 
 class ExtractionPage(Page):
-    def __init__(self, parent: customtkinter.CTk, file_handler: FileHandler):
+    def __init__(self, parent: customtkinter.CTk, file_handler: FileHandler, settings_win):
         super().__init__(parent, "Extraction")
 
         self.__file_handler: FileHandler = file_handler
         self.__file_character_limit = 40
         self.__photo_folder = ""
         self.__sudoc_csv = ""
+        self.__settings_win = settings_win
         self.__file_icon_local_path = "icons\\folder-icon.png"
         # Reference to QThread must be stored or will be destroyed by garbage collector
         self.__thread_object: OCRHandler | None = None
@@ -141,7 +142,7 @@ class ExtractionPage(Page):
             CTkMessagebox(title="ERROR", message="Please select a valid file.", icon="cancel")
             return
 
-        self.__thread_object = OCRHandler(self.__set_query_file)
+        self.__thread_object = OCRHandler(self.__set_query_file, self.__settings_win)
         self.__thread_object.progress_text = self.update_image_progress_text
         self.__thread_object.update_progress_bar = self.update_image_progress_percent
         self.__thread_object.directory = self.__photo_folder
@@ -204,20 +205,22 @@ class OCRHandler(QThread):
     single_result_ready = pyqtSignal(str)
     results_ready = pyqtSignal(str)
     progress_percent = pyqtSignal(float)
+    #output_type =
 
-    def __init__(self, update_file: typing.Callable[[str], None]):
+    def __init__(self, update_file: typing.Callable[[str], None], settings_win):
         super().__init__()
         self.directory = None
         self.update_progress_bar = None
         self.progress_text = None
-
         self.update_file = update_file
+        self.settings_win = settings_win
         return
 
     def run(self):
         print("started extraction")
         self.progress_text("Text Extraction in Progress...")
-        file_ct, result = ocr.main(self.directory, self.update_progress_bar)
+        file_ct, result = ocr.main(self.directory, self.update_progress_bar,
+                                   self.settings_win.output_type)
         self.progress_text("Text Extraction Complete")
         self.results_ready.emit("Text Extraction Complete")
         self.is_finished.emit()
