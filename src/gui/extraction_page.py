@@ -12,9 +12,10 @@ from src.ocr import ocr
 from src.oclc.oclc_api import OCLCSession
 import subprocess
 from src.local_data.file_handler import FileHandler
-
+from tkinter import DISABLED, NORMAL
 
 class ExtractionPage(Page):
+    in_progress_flag = False
     def __init__(self, parent: customtkinter.CTk, file_handler: FileHandler, settings_win):
         super().__init__(parent, "Extraction")
 
@@ -29,6 +30,17 @@ class ExtractionPage(Page):
         # todo add error handling for no image found
         self.__file_icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.__file_icon_local_path)
         self.__file_icon = customtkinter.CTkImage(Image.open(self.__file_icon_path), size=(24, 24))
+        #self._in_progress_flag = 0
+
+        '''
+        @property
+        def in_progress_flag(self):
+            return self._in_progress_flag
+
+        @in_progress_flag.setter
+        def in_progress_flag(self, state):
+            self._in_progress_flag = state
+        '''
 
         # Sub Home frame - Photo folder frame
         self.photo_folder_frame = customtkinter.CTkFrame(self.frame, corner_radius=0)
@@ -68,9 +80,9 @@ class ExtractionPage(Page):
         self.progress_bar.set(0)
         self.progress_bar.grid(row=1, column=0, padx=10)
 
-        self.process_photo_button = customtkinter.CTkButton(self.process_frame, text="Process Photos",
+        self.process_photo_button_ocr = customtkinter.CTkButton(self.process_frame, text="Process Photos",
                                                             command=self.__start_text_extraction)
-        self.process_photo_button.grid(row=2, column=0, padx=10, pady=20)
+        self.process_photo_button_ocr.grid(row=2, column=0, padx=10, pady=20)
 
         # Sub Home frame - SuDoc file frame
         self.sudoc_file_frame = customtkinter.CTkFrame(self.frame, corner_radius=0)
@@ -141,8 +153,16 @@ class ExtractionPage(Page):
         if not os.path.exists(self.__photo_folder):
             CTkMessagebox(title="ERROR", message="Please select a valid file.", icon="cancel")
             return
-
-        self.__thread_object = OCRHandler(self.__set_query_file, self.__settings_win)
+        '''
+        if self.in_progress_flag:
+            CTkMessagebox(title="ERROR", message="Extraction currently in progress. Await its completion \
+                                                          before beginning a second process!!!",
+                          icon="cancel",
+                          width=500, height=350)
+            return
+        '''
+        #self.in_progress_flag = True
+        self.__thread_object = OCRHandler(self.__set_query_file, self.__settings_win, self.process_photo_button_ocr)
         self.__thread_object.progress_text = self.update_image_progress_text
         self.__thread_object.update_progress_bar = self.update_image_progress_percent
         self.__thread_object.directory = self.__photo_folder
@@ -150,6 +170,7 @@ class ExtractionPage(Page):
         self.__thread_object.results_ready.connect(self.__debug_result_ready)
         self.__thread_object.progress_percent.connect(self.__debug_progress_percent)
         self.__thread_object.start()
+        #self.in_progress_flag = False
 
     def __set_query_file(self, file_path: str):
         self.__sudoc_csv = file_path
@@ -205,26 +226,39 @@ class OCRHandler(QThread):
     single_result_ready = pyqtSignal(str)
     results_ready = pyqtSignal(str)
     progress_percent = pyqtSignal(float)
-    #output_type =
 
-    def __init__(self, update_file: typing.Callable[[str], None], settings_win):
+    def __init__(self, update_file: typing.Callable[[str], None], settings_win, process_photo_button_ocr):
         super().__init__()
         self.directory = None
         self.update_progress_bar = None
         self.progress_text = None
         self.update_file = update_file
         self.settings_win = settings_win
+        self.process_photo_button_ocr = process_photo_button_ocr
         return
 
     def run(self):
         print("started extraction")
+        self.process_photo_button_ocr.configure(state=DISABLED)
         self.progress_text("Text Extraction in Progress...")
-        file_ct, result = ocr.main(self.directory, self.update_progress_bar,
+        result, file_ct = ocr.main(self.directory, self.update_progress_bar,
                                    self.settings_win.output_type)
+        if result == 201:
+            CTkMessagebox(title="ERROR", message="Pair-Photo option was passed with an odd number of images.",
+                          icon="cancel",
+                          width=500, height=350)
+        elif result == 202:
+            return_msg = str(file_ct) + " is not a supported image type."
+            CTkMessagebox(title="ERROR", message=return_msg,
+                          icon="cancel",
+                          width=500, height=350)
+
         self.progress_text("Text Extraction Complete")
         self.results_ready.emit("Text Extraction Complete")
         self.is_finished.emit()
-        self.update_file(result)
+        if result not in [201,202]:
+            self.update_file(result)
+        self.process_photo_button_ocr.configure(state=NORMAL)
         return
 
 

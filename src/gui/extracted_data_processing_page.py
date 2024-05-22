@@ -58,11 +58,14 @@ class ProcessExtractedDataPage(Page):
 
         #Currently selected image box
 
-        self.curr_sel_img_label_frame = customtkinter.CTkLabel(self.frame,
+        self.curr_extract_sel_img_fr= customtkinter.CTkFrame(self.frame, corner_radius=0)
+        self.curr_extract_sel_img_fr.grid(row=1, column=1, padx=0, pady=5)
+
+        self.curr_sel_img_label_frame = customtkinter.CTkLabel(self.curr_extract_sel_img_fr ,
                                                                text="Currently Selected Image: ", width=20,
                                                                fg_color='transparent')
 
-        self.curr_sel_img_label_frame.grid(row=1, column=1, padx=0, pady=5)
+        self.curr_sel_img_label_frame.grid(row=0, column=0, padx=0, pady=5)
 
         self.curr_sel_img_border = customtkinter.CTkFrame(self.frame, corner_radius=0, width=470, height=470)
         self.curr_sel_img_border.grid(row=2, column=1, padx=0, pady=5)
@@ -163,6 +166,7 @@ class ProcessExtractedDataPage(Page):
 
 
 
+
     def try_catch_data_load(func):
         def wrap(*args, **kwargs):
             try:
@@ -174,14 +178,18 @@ class ProcessExtractedDataPage(Page):
         return wrap
 
     def event_img_cell_select(self, event):
-        cell_value = self.sheet.get_cell_data(event['selected'].row, event['selected'].column)
-        if self.__settings_win.output_type == "Pair-Photo" and event['selected'].column in [3,4,5,6] and cell_value == cell_value and cell_value != "":
-            self.curr_sel_img_pth = cell_value
-            self.update_curr_selected_img(self.curr_sel_img_pth)
+        if (self.__settings_win.output_type == "Single-Photo" and self.sheet.headers() == self.get_data_column_headers("ocr_editing_pair")
+            or self.__settings_win.output_type == "Pair-Photo" and self.sheet.headers() == self.get_data_column_headers("ocr_editing_single")):
+            pass
+        else:
+            cell_value = self.sheet.get_cell_data(event['selected'].row, event['selected'].column)
+            if self.__settings_win.output_type == "Pair-Photo" and event['selected'].column in [3,4,5,6] and cell_value == cell_value and cell_value != "":
+                self.curr_sel_img_pth = cell_value
+                self.update_curr_selected_img(self.curr_sel_img_pth)
 
-        elif self.__settings_win.output_type == "Single-Photo" and event['selected'].column in [2] and cell_value == cell_value and cell_value != "":
-            self.curr_sel_img_pth = cell_value
-            self.update_curr_selected_img(self.curr_sel_img_pth)
+            elif self.__settings_win.output_type == "Single-Photo" and event['selected'].column in [2] and cell_value == cell_value and cell_value != "":
+                self.curr_sel_img_pth = cell_value
+                self.update_curr_selected_img(self.curr_sel_img_pth)
     def update_curr_selected_img(self, path):
         img = Image.open(path)
         '''
@@ -213,7 +221,7 @@ class ProcessExtractedDataPage(Page):
         self.curr_sel_img_label_frame.configure(text=text)
 
     def save_sheet_changes(self):
-        if self.__settings_win.output_type == 'Pair-Photo':
+        if self.__settings_win.output_type == 'Pair-Photo' and self.sheet.headers() == self.get_data_column_headers("ocr_editing_pair"):
             orig_data = pd.read_csv(self.datapath,
                                      usecols = self.get_data_column_headers('complete_pair'))
             new_df = pd.DataFrame(self.sheet.data,
@@ -233,7 +241,7 @@ class ProcessExtractedDataPage(Page):
             conc_df = conc_df[self.get_data_column_headers('complete_pair')]
             conc_df.to_csv(self.datapath, index = False)
 
-        elif self.__settings_win.output_type == 'Single-Photo':
+        elif self.__settings_win.output_type == 'Single-Photo' and self.sheet.headers() == self.get_data_column_headers("ocr_editing_single") :
             orig_data = pd.read_csv(self.datapath,
                                      usecols = self.get_data_column_headers('complete_single'))
             new_df = pd.DataFrame(self.sheet.data,
@@ -250,6 +258,11 @@ class ProcessExtractedDataPage(Page):
             conc_df['ID'] = conc_df.index
             conc_df = conc_df[self.get_data_column_headers('complete_single')]
             conc_df.to_csv(self.datapath, index = False)
+
+        else:
+            CTkMessagebox(title="ERROR", message="Settings selection and loaded data processing type(pair/single image) /"
+                                                 "do not match!!!", icon='cancel')
+            return
 
         self.load_extracted_data()
 
@@ -272,6 +285,7 @@ class ProcessExtractedDataPage(Page):
             self.sheet.readonly_columns(columns=[0, 2, 3, 4, 5])
 
         self.sheet.set_sheet_data(self.data.to_numpy().tolist())
+        self.sheet.extra_bindings("cell_select", self.event_img_cell_select)
         self.sheet.grid(padx=0)
         return self.datapath
 

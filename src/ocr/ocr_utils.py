@@ -63,7 +63,9 @@ def function_timer(timer_target):
                 data_dir = get_out_dir_pth()
             start = time.time()
             if timer_target == 'main_process':
-                result, ext_pth, output_type = func(*args, **kwargs)
+                ext_pth, result, output_type = func(*args, **kwargs)
+                if ext_pth in [201, 202]:
+                    return ext_pth, result
             else:
                 result = func(*args, **kwargs)
             end_timing = time.time() - start
@@ -108,7 +110,7 @@ def function_timer(timer_target):
                 fin_summ_pth = data_dir + "run_summary.csv"
                 final_summary.to_csv(fin_summ_pth, index=False)
                 print("Run statistics saved to: ", data_dir)
-                return result, ext_pth
+                return ext_pth, result
             else:
                 time_file.write(str(end_timing) + "\n")
             return result
@@ -201,7 +203,7 @@ def get_out_dir_pth(init = False):
             return base_dir + "run0/"
 
 
-def dir_validation(dir):
+def dir_validation(dir, output_type):
     """
     Function to check if the passed directory has the right format
 
@@ -209,25 +211,18 @@ def dir_validation(dir):
     :return: error code
     """
 
-    supported_file_types = [ 'bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
+    supported_file_types = ['bmp', 'dib', 'jpeg', 'jpg', 'jpe', 'jp2', 'png', 'webp', 'avif',
                             'pbm', 'pgm', 'ppm', 'pxm', 'pnm', 'pfm', 'sr', 'ras', 'tiff', 'tif',
-                            'exr', 'hdr', 'pic', 'JPG'
-                            ]
+                            'exr', 'hdr', 'pic', 'JPG', 'PNG']
 
-    if (len(dir) % 2) == 1:
-        return 201
-
-    #print(dir)
-
+    if (len(dir) % 2) == 1 and output_type == "Pair-Photo":
+        return 201, None
     for idx  in range(len(dir)):
         ext = dir[idx].split(".")[-1]
-
         if ext not in supported_file_types:
-
-            return 202
-
+            return 202, ext
     #print(dir)
-    return 200
+    return 200, None
 
 def hconcat_resize(img_list, interpolation = cv2.INTER_CUBIC): 
     """

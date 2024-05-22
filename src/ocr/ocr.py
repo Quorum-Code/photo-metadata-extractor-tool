@@ -100,30 +100,25 @@ def main(path, update_progress_bar, output_type):
 
     p_out, p_in = multiprocessing.Pipe()
 
-    processed_file_count = 0
+    img_dir = os.listdir(path)
+    img_dir = [os.path.join(path, img) for img in img_dir]
+
+    processed_file_count = len(img_dir)
+
+    validation, opt_ext = dir_validation(img_dir, output_type)
+
+    if validation != 200:
+        return validation, opt_ext, output_type
+
+    img_dir.sort()
+
     with multiprocessing.Pool(processes=2) as pool:
         extracted_data = []
         collected_data_proc_1 = []
         collected_data_proc_2 = []
-        img_dir = os.listdir(path)
-        img_dir = [os.path.join(path, img) for img in img_dir]
 
-        validation = dir_validation(img_dir)
-
-        if validation == 201:
-            print("Selected data has odd number of images")
-            return
-
-        elif validation == 202:
-            print("Selected data has an invalid file type")
-            return
-
-        img_dir.sort()
-
-        total_images = len(img_dir)
-        processed_file_count += total_images
         #halfpoint = False
-        hp = total_images//2
+        hp = processed_file_count//2
         collected_data_proc_1.append(pool.apply_async(img_recognition,
                                                       (img_dir[:hp],
                                                        p_in)))
@@ -131,7 +126,7 @@ def main(path, update_progress_bar, output_type):
                                                       (img_dir[hp:],
                                                        p_in)))
 
-        asyncio.run(update_prog_bar(update_progress_bar, total_images, p_out))
+        asyncio.run(update_prog_bar(update_progress_bar, processed_file_count, p_out))
 
         for obj in range(len(collected_data_proc_1)):
             extracted_data.append(collected_data_proc_1[obj].get())
@@ -146,8 +141,9 @@ def main(path, update_progress_bar, output_type):
         ext_pth = write_dataframe(extracted_data, output_type)
         pool.close()
         pool.join()
+
     print("Image Processing Completed")
-    return processed_file_count, ext_pth, output_type
+    return ext_pth, processed_file_count, output_type
 
 if multiprocessing.current_process().name != 'MainProcess':
     ocr_obj = ocr(load_ocr_models=True, load_field_classifier=False) 
