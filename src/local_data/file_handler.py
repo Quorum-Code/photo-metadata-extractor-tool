@@ -44,7 +44,7 @@ DEFAULT_SETTINGS = {
                     "name": "PublicationDate",
                     "path": [
                         "date",
-                        "publicationDate"
+                        "machineReadableDate"
                     ]
                 }
             ]
