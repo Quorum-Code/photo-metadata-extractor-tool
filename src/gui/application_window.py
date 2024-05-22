@@ -2,6 +2,7 @@ import customtkinter
 from src.gui import extraction_page, settings_page, config_page, getting_started_page, extracted_data_processing_page
 import src.local_data.file_handler as fh
 
+
 class App(customtkinter.CTk):
     def __init__(self, filehandler: fh.FileHandler):
         super().__init__()

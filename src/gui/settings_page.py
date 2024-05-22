@@ -43,16 +43,35 @@ class SettingsPage(Page):
         self.default_style_label.grid(row=0, column=0, padx=10, pady=10)
 
         # Todo set event to save default
-        self.default_style_dropdown = customtkinter.CTkOptionMenu(self.style_frame,
+        self.process_mode = customtkinter.CTkOptionMenu(self.style_frame,
                                                                   values=["Single-Photo", "Pair-Photo"],
                                                                   command=self.__output_type_dd_change)
-        self.default_style_dropdown.grid(row=0, column=1, padx=10, pady=10)
-        self.output_type = self.default_style_dropdown.get()
+        self.process_mode.grid(row=0, column=1, padx=10, pady=10)
+        self.output_type = self.process_mode.get()
         # Todo set it to the saved value
 
-        # Process mode, sudoc, sudoc+cover, cover
+        # Process mode frames
+        self.single_search_frame = customtkinter.CTkFrame(self.frame)
+        self.pair_search_frame = customtkinter.CTkFrame(self.frame)
 
-        # Search by sudoc, title
+        # Single search settings
+        self.search_profile_label = customtkinter.CTkLabel(self.single_search_frame, text="Search Profile")
+        self.search_profile_label.grid(row=0, column=0, padx=10, pady=10)
+        self.search_profile = customtkinter.CTkOptionMenu(self.single_search_frame)
+        self.search_profile.grid(row=0, column=1, padx=10, pady=10)
+
+        # Pair search settings
+        self.search_profile_a_label = customtkinter.CTkLabel(self.pair_search_frame, text="Profile A")
+        self.search_profile_a_label.grid(row=0, column=0, padx=10, pady=10)
+        self.search_profile_a = customtkinter.CTkOptionMenu(self.pair_search_frame)
+        self.search_profile_a.grid(row=0, column=1, padx=10, pady=10)
+        self.search_profile_b_label = customtkinter.CTkLabel(self.pair_search_frame, text="Profile B")
+        self.search_profile_b_label.grid(row=1, column=0, padx=10, pady=10)
+        self.search_profile_b = customtkinter.CTkOptionMenu(self.pair_search_frame,
+                                                            values=self.__filehandler.get_query_profile_names())
+        self.search_profile_b.grid(row=1, column=1, padx=10, pady=10)
+
+        self.__set_process_mode("Single-Photo")
 
     import sys
 
@@ -61,10 +80,18 @@ class SettingsPage(Page):
 
 
     def __save_secrets_event(self):
-        # get client id
-        # get client secret
-        # pass to filehandler
-        #
-        # print(f"client_id: {self.client_textbox.get()} client_secret: {self.secret_textbox.get()}")
-
         self.__filehandler.set_secrets(self.client_textbox.get(), self.secret_textbox.get())
+
+    def __set_process_mode(self, mode: str):
+        self.__output_type_dd_change(mode)
+
+        # forget all others
+        if mode == "Single-Photo":
+            self.single_search_frame.grid(row=3, column=0, padx=10, pady=10)
+        else:
+            self.single_search_frame.grid_forget()
+
+        if mode == "Pair-Photo":
+            self.pair_search_frame.grid(row=3, column=0, padx=10, pady=10)
+        else:
+            self.pair_search_frame.grid_forget()
