@@ -95,17 +95,18 @@ class OCLCSession:
         term_name = self.__file_handler.get_query_term_name()
         query_terms = csv_reader.get_query_term(term_name)
 
-        # filter sudocs
-        # TODO: make optional within config
-        filtered_terms = self.__filter_sudocs(query_terms)
-
-        csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
-
         query_profile = self.__file_handler.get_query_profile()
         jp = src.local_data.json_parser.JSONParser(query_profile["key_map"])
 
+        # filter sudocs
+        # TODO: make optional within config
+        trim_terms = query_profile["trim_terms"]
+        filtered_terms = self.__filter_sudocs(query_terms, trim_terms)
+
+        csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
+
         # iterate through list of sudocs
-        result: list[dict[str]] = []
+        result: list[dict[str, str]] = []
         for i in range(len(filtered_terms)):
             text = self.__query_term(filtered_terms[i])
             jd = json.loads(text)
@@ -209,27 +210,26 @@ class OCLCSession:
 
         return response.text
 
-    def __filter_sudocs(self, sudocs: list[str]) -> list[str]:
-        filtered_sudocs = []
-
+    def __filter_sudocs(self, sudocs: list[str], trim_terms) -> list[str]:
+        filtered_terms = []
         whitespace_translator = str.maketrans("", "", string.whitespace)
         punctuation_translator = str.maketrans("", "", string.punctuation)
-        trim_term = "DOCS "
 
         for i in range(len(sudocs)):
+            filtered_term = sudocs[i]
             upped = sudocs[i].upper()
+            for j in range(len(trim_terms)):
+                index = upped.find(trim_terms[j])
+                if index != -1:
+                    filtered_term = filtered_term[index+len(trim_terms[j]):]
+                    break
 
-            try:
-                index = upped.index(trim_term)
-            except ValueError:
-                index = -1
+            filtered_term = filtered_term.translate(whitespace_translator)
+            filtered_term = filtered_term.translate(punctuation_translator)
 
-            if index == 0:
-                sudocs[i] = sudocs[i][len(trim_term):]
+            filtered_terms.append(filtered_term)
 
-            filtered_sudocs.append(sudocs[i].translate(whitespace_translator).translate(punctuation_translator))
-
-        return filtered_sudocs
+        return filtered_terms
 
     def __get_signature(self) -> str:
         client_id, client_secret = self.__file_handler.get_secrets()

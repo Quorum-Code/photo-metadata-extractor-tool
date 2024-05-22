@@ -1,9 +1,7 @@
-import configparser
 import json
 import os
 import codecs
 import copy
-import sys
 from pathlib import Path
 
 DEFAULT_DB_FOLDER_PATH = Path.home().joinpath("pmet")
@@ -17,6 +15,13 @@ DEFAULT_SETTINGS = {
     "query_profiles": [
         {
             "profile_name": "SuDoc",
+            "trim_terms": [
+              "DOCS.",
+              "DOCS",
+              "DOC"
+            ],
+            "removeWhiteSpace": True,
+            "removePunctuation": True,
             "key_map": [
                 {
                     "name": "SuDoc",
@@ -39,7 +44,7 @@ DEFAULT_SETTINGS = {
                     "name": "PublicationDate",
                     "path": [
                         "date",
-                        "publicationDate"
+                        "machineReadableDate"
                     ]
                 }
             ]
@@ -252,6 +257,13 @@ class FileHandler:
             if profile["profile_name"] == selected_profile:
                 return profile
         return {}
+
+    def get_query_profile_names(self) -> list[str]:
+        profiles: list[str] = []
+        for profile in self.__json_data["settings"]["query_profiles"]:
+            profiles.append(profile["profile_name"])
+
+        return profiles
 
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]

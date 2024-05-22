@@ -8,7 +8,7 @@ from customtkinter import filedialog
 from CTkMessagebox import CTkMessagebox
 
 class ProcessExtractedDataPage(Page):
-    def __init__(self, parent: customtkinter.CTk):
+    def __init__(self, parent: customtkinter.CTk, settings_win):
         super().__init__(parent, title="OCR Extraction Processing Page")
         self.__file_icon_local_path = "icons\\folder-icon.png"
         self.__file_icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.__file_icon_local_path)
@@ -24,6 +24,7 @@ class ProcessExtractedDataPage(Page):
         self.__extraction_processing_frame = customtkinter.CTkFrame(self.frame, corner_radius=0,
                                                                     fg_color="transparent", bg_color="transparent")
         self.__extraction_processing_frame.grid_columnconfigure(0, weight=1)
+        self.__settings_win = settings_win
 
         # TITLE
         self.__title_text = customtkinter.CTkLabel(self.frame, text="OCR Extraction Processing Page", font=self.title_font)
@@ -57,11 +58,14 @@ class ProcessExtractedDataPage(Page):
 
         #Currently selected image box
 
-        self.curr_sel_img_label_frame = customtkinter.CTkLabel(self.frame,
+        self.curr_extract_sel_img_fr= customtkinter.CTkFrame(self.frame, corner_radius=0)
+        self.curr_extract_sel_img_fr.grid(row=1, column=1, padx=0, pady=5)
+
+        self.curr_sel_img_label_frame = customtkinter.CTkLabel(self.curr_extract_sel_img_fr ,
                                                                text="Currently Selected Image: ", width=20,
                                                                fg_color='transparent')
 
-        self.curr_sel_img_label_frame.grid(row=1, column=1, padx=0, pady=5)
+        self.curr_sel_img_label_frame.grid(row=0, column=0, padx=0, pady=5)
 
         self.curr_sel_img_border = customtkinter.CTkFrame(self.frame, corner_radius=0, width=470, height=470)
         self.curr_sel_img_border.grid(row=2, column=1, padx=0, pady=5)
@@ -87,10 +91,17 @@ class ProcessExtractedDataPage(Page):
                               outline_thickness=2,
                               outline_color='grey',
                               )
-        self.sheet.headers(self.get_data_column_headers('ocr_editing'))
-        self.sheet.grid(row=2, column=0, padx=0)
 
-        self.sheet.readonly_columns(columns=[0,3,4,5,6,7,8])
+
+        if self.__settings_win.output_type == 'Pair-Photo':
+            self.sheet.headers(self.get_data_column_headers('ocr_editing_pair'))
+            self.sheet.readonly_columns(columns=[0, 3, 4, 5, 6, 7, 8])
+        elif self.__settings_win.output_type == 'Single-Photo':
+            self.sheet.headers(self.get_data_column_headers('ocr_editing_single'))
+            self.sheet.readonly_columns(columns=[0, 2, 3, 4, 5])
+
+        self.sheet.headers(self.get_data_column_headers('ocr_editing_pair'))
+        self.sheet.grid(row=2, column=0, padx=0)
 
         self.sheet.enable_bindings('all')
 
@@ -123,11 +134,6 @@ class ProcessExtractedDataPage(Page):
         self.save_button.grid(row=0, column=1, padx=5, pady=5)
 
 
-
-
-
-        #pass
-
     def __ask_extracted_data_csv(self):
         self.datapath = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
         self.datapath = self.load_extracted_data()
@@ -138,18 +144,27 @@ class ProcessExtractedDataPage(Page):
         self.curr_extract_path.configure(text=text)
 
     def get_data_column_headers(self, header_group):
-        if header_group == 'complete':
+        if header_group == 'complete_pair':
             return [ 'ID', 'Title',
                         'SuDoc', 'Publication Year',
                         'Path', 'Error Code', 'Query Status',
                         'Sudoc Image', 'Title Image',
                         'Image 1 Path',	'Image 2 Path',
                         'Image 1 Ext', 'Image 2 Ext' ]
-        elif header_group == 'ocr_editing':
+        elif header_group == 'complete_single':
+            return [ 'ID', 'extracted_text',
+                    'Publication Year', 'Error Code', 'Query Status',
+                    'Image 1 Path' ]
+        elif header_group == 'ocr_editing_pair':
             return [ 'ID', 'Title', 'SuDoc',
                      'Sudoc Image', 'Title Image',
                      'Image 1 Path', 'Image 2 Path',
                      'Image 1 Ext', 'Image 2 Ext' ]
+        elif header_group == 'ocr_editing_single':
+            return [ 'ID', 'extracted_text',
+                     'Image 1 Path' ]
+
+
 
 
     def try_catch_data_load(func):
@@ -163,23 +178,32 @@ class ProcessExtractedDataPage(Page):
         return wrap
 
     def event_img_cell_select(self, event):
-        cell_value = self.sheet.get_cell_data(event['selected'].row, event['selected'].column)
-        if event['selected'].column in [3,4,5,6] and cell_value == cell_value and cell_value != "":
-            self.curr_sel_img_pth = cell_value
-            self.update_curr_selected_img(self.curr_sel_img_pth)
+        if (self.__settings_win.output_type == "Single-Photo" and self.sheet.headers() == self.get_data_column_headers("ocr_editing_pair")
+            or self.__settings_win.output_type == "Pair-Photo" and self.sheet.headers() == self.get_data_column_headers("ocr_editing_single")):
+            pass
+        else:
+            cell_value = self.sheet.get_cell_data(event['selected'].row, event['selected'].column)
+            if self.__settings_win.output_type == "Pair-Photo" and event['selected'].column in [3,4,5,6] and cell_value == cell_value and cell_value != "":
+                self.curr_sel_img_pth = cell_value
+                self.update_curr_selected_img(self.curr_sel_img_pth)
+
+            elif self.__settings_win.output_type == "Single-Photo" and event['selected'].column in [2] and cell_value == cell_value and cell_value != "":
+                self.curr_sel_img_pth = cell_value
+                self.update_curr_selected_img(self.curr_sel_img_pth)
     def update_curr_selected_img(self, path):
         img = Image.open(path)
         '''
         if img.width > img.height:
             img = img.rotate(270)
         '''
+
         for orientation in ExifTags.TAGS.keys():
             if ExifTags.TAGS[orientation] == 'Orientation':
                 break
 
         exif = img._getexif()
 
-        if exif != None:
+        if exif != None and orientation in exif:
 
             if exif[orientation] == 3:
                 img = img.rotate(180, expand=True)
@@ -197,31 +221,71 @@ class ProcessExtractedDataPage(Page):
         self.curr_sel_img_label_frame.configure(text=text)
 
     def save_sheet_changes(self):
-        orig_data = pd.read_csv(self.datapath,
-                                 usecols = self.get_data_column_headers('complete'))
-        new_df = pd.DataFrame(self.sheet.data,
-                              columns = self.get_data_column_headers("ocr_editing"))
-        conc_df = pd.merge(orig_data[[ 'ID',
-                        'Publication Year',
-                        'Path', 'Error Code', 'Query Status',
-                        'Sudoc Image', 'Title Image',
-                        'Image 1 Path',	'Image 2 Path',
-                        'Image 1 Ext', 'Image 2 Ext' ]], new_df[['ID', 'SuDoc', 'Title']],
-                         how = "left", on=['ID'])
+        if self.__settings_win.output_type == 'Pair-Photo' and self.sheet.headers() == self.get_data_column_headers("ocr_editing_pair"):
+            orig_data = pd.read_csv(self.datapath,
+                                     usecols = self.get_data_column_headers('complete_pair'))
+            new_df = pd.DataFrame(self.sheet.data,
+                                  columns = self.get_data_column_headers("ocr_editing_pair"))
+            conc_df = pd.merge(orig_data[[ 'ID',
+                            'Publication Year',
+                            'Path', 'Error Code', 'Query Status',
+                            'Sudoc Image', 'Title Image',
+                            'Image 1 Path',	'Image 2 Path',
+                            'Image 1 Ext', 'Image 2 Ext' ]], new_df[['ID', 'SuDoc', 'Title']],
+                             how = "left", on=['ID'])
 
-        new_rows = new_df[new_df.ID == '']
-        conc_df = pd.concat([conc_df, new_rows])
-        conc_df = conc_df.reset_index()
-        conc_df['ID'] = conc_df.index
-        conc_df = conc_df[self.get_data_column_headers('complete')]
-        conc_df.to_csv(self.datapath, index = False)
+            new_rows = new_df[new_df.ID == '']
+            conc_df = pd.concat([conc_df, new_rows])
+            conc_df = conc_df.reset_index()
+            conc_df['ID'] = conc_df.index
+            conc_df = conc_df[self.get_data_column_headers('complete_pair')]
+            conc_df.to_csv(self.datapath, index = False)
+
+        elif self.__settings_win.output_type == 'Single-Photo' and self.sheet.headers() == self.get_data_column_headers("ocr_editing_single") :
+            orig_data = pd.read_csv(self.datapath,
+                                     usecols = self.get_data_column_headers('complete_single'))
+            new_df = pd.DataFrame(self.sheet.data,
+                                  columns = self.get_data_column_headers("ocr_editing_single"))
+            conc_df = pd.merge(orig_data[[ 'ID',
+                            'Publication Year',
+                            'Error Code', 'Query Status',
+                            'Image 1 Path']], new_df[['ID', 'extracted_text']],
+                             how = "left", on=['ID'])
+
+            new_rows = new_df[new_df.ID == '']
+            conc_df = pd.concat([conc_df, new_rows])
+            conc_df = conc_df.reset_index()
+            conc_df['ID'] = conc_df.index
+            conc_df = conc_df[self.get_data_column_headers('complete_single')]
+            conc_df.to_csv(self.datapath, index = False)
+
+        else:
+            CTkMessagebox(title="ERROR", message="Settings selection and loaded data processing type(pair/single image) /"
+                                                 "do not match!!!", icon='cancel')
+            return
+
         self.load_extracted_data()
 
 
     @try_catch_data_load
     def load_extracted_data(self):
-        self.data = pd.read_csv(self.datapath, index_col=False, usecols= self.get_data_column_headers('ocr_editing'))
+        if self.__settings_win.output_type == 'Pair-Photo':
+            self.sheet.headers(self.get_data_column_headers('ocr_editing_pair'))
+            self.data = pd.read_csv(self.datapath, index_col=False,
+                                    usecols= self.get_data_column_headers('ocr_editing_pair'),
+                                    keep_default_na=False)
+            self.sheet.readonly_columns(columns=[1,2], readonly=False)
+            self.sheet.readonly_columns(columns=[0, 3, 4, 5, 6, 7, 8])
+        elif self.__settings_win.output_type == 'Single-Photo':
+            self.sheet.headers(self.get_data_column_headers('ocr_editing_single'))
+            self.data = pd.read_csv(self.datapath, index_col=False,
+                                    usecols= self.get_data_column_headers('ocr_editing_single'),
+                                    keep_default_na=False)
+            self.sheet.readonly_columns(columns=[1], readonly=False)
+            self.sheet.readonly_columns(columns=[0, 2, 3, 4, 5])
+
         self.sheet.set_sheet_data(self.data.to_numpy().tolist())
+        self.sheet.extra_bindings("cell_select", self.event_img_cell_select)
         self.sheet.grid(padx=0)
         return self.datapath
 
