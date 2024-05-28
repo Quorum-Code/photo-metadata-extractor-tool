@@ -1,5 +1,4 @@
 import typing
-
 import requests
 import json
 import base64
@@ -114,12 +113,20 @@ class OCLCSession:
             row: dict[str, str] = {}
             if "bibRecords" in jd and len(jd["bibRecords"]) > 0:
                 row = jp.get_values(jd["bibRecords"][0])
+                l = len(jd["bibRecords"])
+                if l == 1:
+                    row["Query Status"] = "Single record found"
+                else:
+                    row["Query Status"] = f"Multiple record found: {l} records"
+
+            else:
+                row["Query Status"] = "No record found"
             row["Query Term"] = query_terms[i]
             row["Filtered Term"] = filtered_terms[i]
 
             print(f"ROW: {row}")
             result.append(row)
-        col_names = ["Query Term", "Filtered Term"] + jp.get_cols()
+        col_names = ["Query Term", "Filtered Term", "Query Status"] + jp.get_cols()
 
         csv_writer.write_data(col_names, result)
 

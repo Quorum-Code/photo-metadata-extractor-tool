@@ -26,7 +26,7 @@ class CSVWriter:
         self.__rows: list[dict[str]]
         return
 
-    def write_data(self, cols: list[str], rows: list[dict[str]]):
+    def write_data(self, cols: list[str], rows: list[dict[str, str]]):
         if not self.__ready:
             print("unable to write data to csv")
             return
