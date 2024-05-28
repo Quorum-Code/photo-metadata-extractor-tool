@@ -48,6 +48,34 @@ DEFAULT_SETTINGS = {
                     ]
                 }
             ]
+        },
+        {
+            "profile_name": "Title Search",
+            "trim_terms": [
+              "DOCS.",
+              "DOCS",
+              "DOC"
+            ],
+            "removeWhiteSpace": False,
+            "removePunctuation": False,
+            "key_map": [
+                {
+                    "name": "Title",
+                    "path": [
+                        "title",
+                        "mainTitles",
+                        "0",
+                        "text"
+                    ]
+                },
+                {
+                    "name": "PublicationDate",
+                    "path": [
+                        "date",
+                        "machineReadableDate"
+                    ]
+                }
+            ]
         }
     ],
     "scale": "125%"

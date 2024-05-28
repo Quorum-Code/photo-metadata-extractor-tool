@@ -1,6 +1,6 @@
 import unittest
 import os
-from oclc.oclc_api import *
+from src.oclc.oclc_api import *
 
 
 # TODO: Corral into test an actual test suite
@@ -9,10 +9,10 @@ class TestOCLCAPI(unittest.TestCase):
     def setUp(self):
         self.has_secrets = False
         if os.path.exists(".secrets"):
-            self.good_session = OCLCSession("config.ini")
+            # self.good_session = OCLCSession("config.ini")
             self.has_secrets = True
 
-        self.bad_session = OCLCSession("tests/test_config.ini")
+        # self.bad_session = OCLCSession("tests/test_config.ini")
 
     def tearDown(self):
         pass
