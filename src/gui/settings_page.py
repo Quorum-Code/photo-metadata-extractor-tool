@@ -44,8 +44,8 @@ class SettingsPage(Page):
 
         # Todo set event to save default
         self.process_mode = customtkinter.CTkOptionMenu(self.style_frame,
-                                                                  values=["Single-Photo", "Pair-Photo"],
-                                                                  command=self.__output_type_dd_change)
+                                                        values=["Single-Photo", "Pair-Photo"],
+                                                        command=self.__output_type_dd_change)
         self.process_mode.grid(row=0, column=1, padx=10, pady=10)
         self.output_type = self.process_mode.get()
         # Todo set it to the saved value
@@ -57,10 +57,13 @@ class SettingsPage(Page):
         # Single search settings
         self.search_profile_label = customtkinter.CTkLabel(self.single_search_frame, text="Search Profile")
         self.search_profile_label.grid(row=0, column=0, padx=10, pady=10)
-        self.search_profile = customtkinter.CTkOptionMenu(self.single_search_frame)
+        self.search_profile = customtkinter.CTkOptionMenu(self.single_search_frame,
+                                                          values=filehandler.get_query_profile_names(),
+                                                          command=self.__set_query_profile)
         self.search_profile.grid(row=0, column=1, padx=10, pady=10)
 
         # Pair search settings
+        # TODO: not implemented
         self.search_profile_a_label = customtkinter.CTkLabel(self.pair_search_frame, text="Profile A")
         self.search_profile_a_label.grid(row=0, column=0, padx=10, pady=10)
         self.search_profile_a = customtkinter.CTkOptionMenu(self.pair_search_frame)
@@ -73,14 +76,14 @@ class SettingsPage(Page):
 
         self.__set_process_mode("Single-Photo")
 
-    import sys
-
     def __output_type_dd_change(self, value):
         self.output_type = value
 
-
     def __save_secrets_event(self):
         self.__filehandler.set_secrets(self.client_textbox.get(), self.secret_textbox.get())
+
+    def __set_query_profile(self, value):
+        self.__filehandler.set_query_profile(value)
 
     def __set_process_mode(self, mode: str):
         self.__output_type_dd_change(mode)
