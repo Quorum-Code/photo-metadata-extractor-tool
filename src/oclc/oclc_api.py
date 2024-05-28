@@ -1,5 +1,4 @@
 import typing
-
 import requests
 import json
 import base64
@@ -91,16 +90,19 @@ class OCLCSession:
         # Create csv object
         csv_reader = CSVReader(csv_file_path)
 
-        # get list of sudocs
+        # get list of query terms
         term_name = self.__file_handler.get_query_term_name()
         query_terms = csv_reader.get_query_term(term_name)
 
         query_profile = self.__file_handler.get_query_profile()
         jp = src.local_data.json_parser.JSONParser(query_profile["key_map"])
 
-        # filter sudocs
-        # TODO: make optional within config
-        trim_terms = query_profile["trim_terms"]
+        # filter query term
+        if "trim_terms" in query_profile:
+            trim_terms = query_profile["trim_terms"]
+        else:
+            trim_terms = []
+
         filtered_terms = self.__filter_sudocs(query_terms, trim_terms)
 
         csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
@@ -114,12 +116,20 @@ class OCLCSession:
             row: dict[str, str] = {}
             if "bibRecords" in jd and len(jd["bibRecords"]) > 0:
                 row = jp.get_values(jd["bibRecords"][0])
+                n = len(jd["bibRecords"])
+                if n == 1:
+                    row["Query Status"] = "Single record found"
+                else:
+                    row["Query Status"] = f"Multiple record found: {n} records"
+
+            else:
+                row["Query Status"] = "No record found"
             row["Query Term"] = query_terms[i]
             row["Filtered Term"] = filtered_terms[i]
 
             print(f"ROW: {row}")
             result.append(row)
-        col_names = ["Query Term", "Filtered Term"] + jp.get_cols()
+        col_names = ["Query Term", "Filtered Term", "Query Status"] + jp.get_cols()
 
         csv_writer.write_data(col_names, result)
 
