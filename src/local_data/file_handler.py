@@ -15,6 +15,7 @@ DEFAULT_SETTINGS = {
     "query_profiles": [
         {
             "profile_name": "SuDoc",
+            "query_type": "gn",
             "trim_terms": [
               "DOCS.",
               "DOCS",
@@ -51,11 +52,7 @@ DEFAULT_SETTINGS = {
         },
         {
             "profile_name": "Title Search",
-            "trim_terms": [
-              "DOCS.",
-              "DOCS",
-              "DOC"
-            ],
+            "query_type": "ti",
             "removeWhiteSpace": False,
             "removePunctuation": False,
             "key_map": [
@@ -159,6 +156,9 @@ class FileHandler:
 
         # Load secrets as dict
         self.__secrets: dict = self.__load_secrets()
+
+        # Current query profile
+        self.__query_profile = self.get_query_profile()
 
     def __init_profiles(self):
         is_modified = False
@@ -279,6 +279,11 @@ class FileHandler:
     def get_query_term_name(self) -> str:
         return self.__json_data["settings"]["query_profile"]
 
+    def set_query_profile(self, profile_name: str):
+        for profile in self.__json_data["settings"]["query_profiles"]:
+            if profile["profile_name"] == profile_name:
+                self.__query_profile = profile
+
     def get_query_profile(self) -> dict:
         selected_profile = self.__json_data["settings"]["query_profile"]
         for profile in self.__json_data["settings"]["query_profiles"]:
@@ -313,7 +318,11 @@ class FileHandler:
         return copy.deepcopy(self.__json_data["configuration"]["query"]["parameters"])
 
     def get_query_type(self) -> str:
-        return self.__json_data["configuration"]["query"]["query_type"]
+        if self.__query_profile is None:
+            self.__query_profile = self.get_query_profile()
+        print("Getting query type")
+        print(f'{self.__query_profile["query_type"]}')
+        return self.__query_profile["query_type"]
 
     def set_config(self, token_settings, query_settings) -> bool:
         token_settings = self.__json_form_str(token_settings)
