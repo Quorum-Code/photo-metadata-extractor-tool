@@ -97,7 +97,7 @@ DEFAULT_CONFIGURATION = {
         },
         "parameters": {
             "q": "",
-            "heldByInstitutionID": "128807,45266",
+            "heldByInstitutionID": "128807,45266,48631",
             "itemType": "",
             "itemSubType": "",
             "retentionCommitments": "false",
