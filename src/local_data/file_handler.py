@@ -227,6 +227,17 @@ class FileHandler:
         self.__json_data["settings"]["scale"] = scale
         self.__save_json()
 
+    def __check_profile(self):
+        if self.__query_profile is None:
+            self.get_query_profile()
+
+    def get_profile_name(self) -> str:
+        self.__check_profile()
+
+        if "profile_name" in self.__query_profile:
+            return self.__query_profile["profile_name"]
+        return "no profile name"
+
     def get_cached_token(self) -> str:
         if "cached_token" in self.__json_data["settings"]:
             return self.__json_data["settings"]["cached_token"]
