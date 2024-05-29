@@ -107,6 +107,8 @@ class OCLCSession:
 
         csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
 
+        query_term_name = self.__file_handler.get_profile_name()
+
         # iterate through list of sudocs
         result: list[dict[str, str]] = []
         for i in range(len(filtered_terms)):
@@ -124,12 +126,12 @@ class OCLCSession:
 
             else:
                 row["Query Status"] = "No record found"
-            row["Query Term"] = query_terms[i]
+            row[query_term_name] = query_terms[i]
             row["Filtered Term"] = filtered_terms[i]
 
             print(f"ROW: {row}")
             result.append(row)
-        col_names = ["Query Term", "Filtered Term", "Query Status"] + jp.get_cols()
+        col_names = [query_term_name, "Filtered Term", "Query Status"] + jp.get_cols()
 
         csv_writer.write_data(col_names, result)
 
