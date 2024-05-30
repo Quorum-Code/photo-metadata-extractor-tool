@@ -307,8 +307,6 @@ class FileHandler:
     def get_query_profile_names(self) -> list[str]:
         profiles: list[str] = []
 
-        print(f"Query profiles: {self.__json_data['settings']['query_profiles']}")
-
         for profile in self.__json_data["settings"]["query_profiles"]:
             profiles.append(profile["profile_name"])
 
@@ -440,9 +438,9 @@ class FileHandler:
                 return False
         return True
 
-    def __init_program_path(self, default_data: dict):
-        default_data["settings"]["program_path"] = os.getcwd()
-        self.save_data(default_data)
+    def __init_program_path(self):
+        self.__json_data["settings"]["program_path"] = os.getcwd()
+        self.__save_json()
 
     def __init_secrets_file(self):
         if not self.pmet_secrets_file_path.exists():
@@ -514,10 +512,15 @@ class FileHandler:
             text = text.replace('\'', '\"')
             return json.loads(text)
 
+    def load_default_settings(self):
+        self.__json_data["settings"] = copy.deepcopy(DEFAULT_SETTINGS)
+        self.__init_program_path()
+        self.__save_json()
+        return
+
 
 def main():
     fh = FileHandler()
-
 
 if __name__ == "__main__":
     main()
