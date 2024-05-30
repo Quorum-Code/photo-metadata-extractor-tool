@@ -51,7 +51,7 @@ DEFAULT_SETTINGS = {
             ]
         },
         {
-            "profile_name": "Title Search",
+            "profile_name": "Title",
             "query_type": "ti",
             "removeWhiteSpace": False,
             "removePunctuation": False,
@@ -293,7 +293,9 @@ class FileHandler:
     def set_query_profile(self, profile_name: str):
         for profile in self.__json_data["settings"]["query_profiles"]:
             if profile["profile_name"] == profile_name:
+                self.__json_data["settings"]["query_profile"] = profile_name
                 self.__query_profile = profile
+                self.__save_json()
 
     def get_query_profile(self) -> dict:
         selected_profile = self.__json_data["settings"]["query_profile"]
@@ -304,10 +306,18 @@ class FileHandler:
 
     def get_query_profile_names(self) -> list[str]:
         profiles: list[str] = []
+
         for profile in self.__json_data["settings"]["query_profiles"]:
             profiles.append(profile["profile_name"])
 
         return profiles
+
+    def profile_remove_whitespace(self) -> bool:
+        print("getting whitespace")
+        return self.__query_profile["removeWhiteSpace"]
+
+    def profile_remove_punctuation(self) -> bool:
+        return self.__query_profile["removePunctuation"]
 
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]
@@ -396,6 +406,7 @@ class FileHandler:
 
 
     def load_default_config(self):
+        print("WARNING: Loading default config")
         self.__json_data["configuration"] = DEFAULT_CONFIGURATION
 
     def __json_form_str(self, text: str) -> str:
@@ -415,6 +426,7 @@ class FileHandler:
         if not self.pmet_setting_file_path.exists():
             # Try to create settings json
             try:
+                print(f"No pmet-data.json file found. Creating {self.pmet_setting_file_path}")
                 with self.pmet_setting_file_path.open("w") as f:
                     default_data = {"settings": DEFAULT_SETTINGS, "configuration": DEFAULT_CONFIGURATION}
                     self.__init_program_path(default_data)
@@ -426,25 +438,14 @@ class FileHandler:
                 return False
         return True
 
-    def __init_program_path(self, default_data: dict):
-        default_data["settings"]["program_path"] = os.getcwd()
-        self.save_data(default_data)
-
-        # if (os.getcwd().endswith("\\photo-metadata-extractor-tool") or
-        #     os.getcwd().endswith("\\pmet")) \
-        #         and os.path.exists("gui") and os.path.exists("oclc"):
-        #     default_data["settings"]["program_path"] = os.getcwd()
-        #     self.save_data(default_data)
-        # else:
-        #     print("The program must be started at its directory to be initialized."
-        #           " (After the first run it should be able to be run from any directory.)")
-        #     sys.exit("ERROR: Bad pwd")
+    def __init_program_path(self):
+        self.__json_data["settings"]["program_path"] = os.getcwd()
+        self.__save_json()
 
     def __init_secrets_file(self):
         if not self.pmet_secrets_file_path.exists():
             try:
                 with self.pmet_secrets_file_path.open("wb") as f:
-                    # no longer warning highlighted?? ok....
                     f.write(codecs.encode(bytes(f"{DEFAULT_SECRETS}", "utf-8"), "hex"))
             except FileNotFoundError:
                 return False
@@ -511,10 +512,15 @@ class FileHandler:
             text = text.replace('\'', '\"')
             return json.loads(text)
 
+    def load_default_settings(self):
+        self.__json_data["settings"] = copy.deepcopy(DEFAULT_SETTINGS)
+        self.__init_program_path()
+        self.__save_json()
+        return
+
 
 def main():
     fh = FileHandler()
-
 
 if __name__ == "__main__":
     main()

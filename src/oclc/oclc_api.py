@@ -86,7 +86,7 @@ class OCLCSession:
         # Invalid token
         return False
 
-    def query_csv_sudoc(self, csv_file_path: str, update_progress_percent: typing.Callable[[float], None]) -> str:
+    def query_csv_terms(self, csv_file_path: str, update_progress_percent: typing.Callable[[float], None]) -> str:
         # Create csv object
         csv_reader = CSVReader(csv_file_path)
 
@@ -103,7 +103,7 @@ class OCLCSession:
         else:
             trim_terms = []
 
-        filtered_terms = self.__filter_sudocs(query_terms, trim_terms)
+        filtered_terms = self.__filter_terms(query_terms, trim_terms)
 
         csv_writer = CSVWriter(self.__file_handler.query_result_folder_path())
 
@@ -222,7 +222,7 @@ class OCLCSession:
 
         return response.text
 
-    def __filter_sudocs(self, sudocs: list[str], trim_terms) -> list[str]:
+    def __filter_terms(self, sudocs: list[str], trim_terms) -> list[str]:
         filtered_terms = []
         whitespace_translator = str.maketrans("", "", string.whitespace)
         punctuation_translator = str.maketrans("", "", string.punctuation)
@@ -236,8 +236,11 @@ class OCLCSession:
                     filtered_term = filtered_term[index+len(trim_terms[j]):]
                     break
 
-            filtered_term = filtered_term.translate(whitespace_translator)
-            filtered_term = filtered_term.translate(punctuation_translator)
+            if self.__file_handler.profile_remove_whitespace():
+                filtered_term = filtered_term.translate(whitespace_translator)
+
+            if self.__file_handler.profile_remove_punctuation():
+                filtered_term = filtered_term.translate(punctuation_translator)
 
             filtered_terms.append(filtered_term)
 

@@ -1,8 +1,7 @@
-import sys
-
 import customtkinter
 from src.gui.page import Page
 import src.local_data.file_handler
+from CTkMessagebox import CTkMessagebox
 
 
 class SettingsPage(Page):
@@ -34,16 +33,28 @@ class SettingsPage(Page):
         self.save_credentials.grid(row=2, column=0, padx=10, pady=10)
 
         """ **************
+        Load Default Settings Frame 
+        ************** """
+
+        self.reload_defaults_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
+        self._insert_widget(self.reload_defaults_frame)
+
+        self.reload_default_settings = customtkinter.CTkButton(self.reload_defaults_frame,
+                                                               text="Reload Default Settings",
+                                                               command=self.__ask_load_default_settings)
+        self.reload_default_settings.grid(row=0, column=0, padx=10, pady=10)
+
+        """ **************
         Process Mode Frame 
         ************** """
-        self.style_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
-        self._insert_widget(self.style_frame)
+        self.process_mode_frame = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
+        self._insert_widget(self.process_mode_frame)
 
-        self.default_style_label = customtkinter.CTkLabel(self.style_frame, text="Process Mode")
-        self.default_style_label.grid(row=0, column=0, padx=10, pady=10)
+        self.process_mode_label = customtkinter.CTkLabel(self.process_mode_frame, text="Process Mode")
+        self.process_mode_label.grid(row=0, column=0, padx=10, pady=10)
 
         # Todo set event to save default
-        self.process_mode = customtkinter.CTkOptionMenu(self.style_frame,
+        self.process_mode = customtkinter.CTkOptionMenu(self.process_mode_frame,
                                                         values=["Single-Photo", "Pair-Photo"],
                                                         command=self.__output_type_dd_change)
         self.process_mode.grid(row=0, column=1, padx=10, pady=10)
@@ -58,7 +69,7 @@ class SettingsPage(Page):
         self.search_profile_label = customtkinter.CTkLabel(self.single_search_frame, text="Search Profile")
         self.search_profile_label.grid(row=0, column=0, padx=10, pady=10)
         self.search_profile = customtkinter.CTkOptionMenu(self.single_search_frame,
-                                                          values=filehandler.get_query_profile_names(),
+                                                          values=self.__get_profile_names(),
                                                           command=self.__set_query_profile)
         self.search_profile.grid(row=0, column=1, padx=10, pady=10)
 
@@ -75,6 +86,19 @@ class SettingsPage(Page):
         self.search_profile_b.grid(row=1, column=1, padx=10, pady=10)
 
         self.__set_process_mode("Single-Photo")
+
+    def __get_profile_names(self) -> list[str]:
+        names = self.__filehandler.get_query_profile_names()
+
+        try:
+            names.remove(self.__filehandler.get_profile_name())
+        except ValueError:
+            print(f"Could not find profile: {self.__filehandler.get_profile_name()}")
+            return names
+
+        names = [self.__filehandler.get_profile_name()] + names
+
+        return names
 
     def __output_type_dd_change(self, value):
         self.output_type = value
@@ -98,3 +122,17 @@ class SettingsPage(Page):
             self.pair_search_frame.grid(row=3, column=0, padx=10, pady=10)
         else:
             self.pair_search_frame.grid_forget()
+
+    def __ask_load_default_settings(self):
+        msg = CTkMessagebox(title="Reload Default Settings?",
+                            message="Are you sure you want to reload the default settings? "
+                                    "(This process will overwrite any profiles created and save"
+                                    " to the pmet-data.json file.)",
+                            icon="question",
+                            option_1="Cancel",
+                            option_2="Yes")
+        if msg.get() != "Yes":
+            return
+
+        print("loading and saving default settings")
+        self.__filehandler.load_default_settings()
