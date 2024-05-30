@@ -91,7 +91,6 @@ class CSVDocument:
         #     for row in csv_file:
         #         self.__file_contents.append(row)
 
-        # TODO: optional static path -> i.e. configing a folder to be the default path for csv files
         # self.__file_path = ""
         # self.__time_stamp_format = "%m-%d-%Y_%H.%M.%S"
         # self.__file_extension = ".csv"

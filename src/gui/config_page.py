@@ -102,8 +102,10 @@ class ConfigurationPage(Page):
         is_successful = self.__file_handler.set_config(token_settings, query_settings)
 
         if not is_successful:
-            # todo, change warning text to ERROR: json decoding error
-            # todo: create popup window module to handle such cases
+            CTkMessagebox(title="Save Config Failed",
+                          message="JSON Decoding Error, configuration may not have been saved.",
+                          icon="error",
+                          option_1="OK")
 
             print("JSON Decoding error")
             pass

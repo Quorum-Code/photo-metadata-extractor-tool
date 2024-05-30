@@ -26,10 +26,8 @@ class ExtractionPage(Page):
         self.__file_icon_local_path = "icons\\folder-icon.png"
         # Reference to QThread must be stored or will be destroyed by garbage collector
         self.__thread_object: OCRHandler | None = None
-        # todo add error handling for no image found
         self.__file_icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.__file_icon_local_path)
         self.__file_icon = customtkinter.CTkImage(Image.open(self.__file_icon_path), size=(24, 24))
-        #self._in_progress_flag = 0
 
         '''
         @property
