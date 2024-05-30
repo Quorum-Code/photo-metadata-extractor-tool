@@ -7,10 +7,10 @@ from src.oclc.oclc_api import *
 
 class TestOCLCAPI(unittest.TestCase):
     def setUp(self):
-        self.has_secrets = False
-        if os.path.exists(".secrets"):
-            # self.good_session = OCLCSession("config.ini")
-            self.has_secrets = True
+        self.has_secrets = True
+        # if os.path.exists(".secrets"):
+        #     # self.good_session = OCLCSession("config.ini")
+        #     self.has_secrets = True
 
         # self.bad_session = OCLCSession("tests/test_config.ini")
 
