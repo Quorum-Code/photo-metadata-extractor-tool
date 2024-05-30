@@ -322,7 +322,6 @@ class FileHandler:
     def get_token_url(self) -> str:
         return self.__json_data["configuration"]["token"]["url"]
 
-    # todo: find best practice for copying dictionaries from an object
     def get_token_headers(self) -> dict:
         return copy.deepcopy(self.__json_data["configuration"]["token"]["headers"])
 
@@ -461,8 +460,6 @@ class FileHandler:
         :return:
         """
 
-        # TODO: verify integrity of stored json data
-
         json_data = {}
         try:
             with open(self.pmet_setting_file_path) as f:
@@ -485,8 +482,6 @@ class FileHandler:
     def __restore_default_data(self):
         json_data = DEFAULT_DATA
         self.__init_program_path(json_data)
-
-        # todo: archive old data before overwriting... i.e save as pmet-data-1-17-2024.json
 
         with open(self.pmet_setting_file_path, "w") as f:
             f.write(json.dumps(json_data, indent=self.__indent))

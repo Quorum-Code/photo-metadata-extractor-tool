@@ -23,9 +23,5 @@ class GettingStartedPage(Page):
 
         self._insert_widget(self.__getting_started_frame)
 
-        # TODO: Links to documentation
-
-        pass
-
     def get_next_frame_row(self):
         return

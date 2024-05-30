@@ -53,13 +53,11 @@ class SettingsPage(Page):
         self.process_mode_label = customtkinter.CTkLabel(self.process_mode_frame, text="Process Mode")
         self.process_mode_label.grid(row=0, column=0, padx=10, pady=10)
 
-        # Todo set event to save default
         self.process_mode = customtkinter.CTkOptionMenu(self.process_mode_frame,
                                                         values=["Single-Photo", "Pair-Photo"],
                                                         command=self.__output_type_dd_change)
         self.process_mode.grid(row=0, column=1, padx=10, pady=10)
         self.output_type = self.process_mode.get()
-        # Todo set it to the saved value
 
         # Process mode frames
         self.single_search_frame = customtkinter.CTkFrame(self.frame)
