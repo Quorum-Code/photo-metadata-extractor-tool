@@ -3,6 +3,7 @@
 
 ![PMET - License](https://img.shields.io/badge/license-MIT-blue)
 ![LOC](https://tokei.rs/b1/github/Quorum-Code/photo-metadata-extractor-tool?category=lines)
+![TESTS](https://github.com/Quorum-Code/photo-metadata-extractor-tool/actions/workflows/test.yml/badge.svg)
 
 # PMET Wiki Documentation
 [View the wiki here.](https://github.com/Quorum-Code/photo-metadata-extractor-tool/wiki)
