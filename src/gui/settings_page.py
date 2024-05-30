@@ -1,5 +1,3 @@
-import sys
-
 import customtkinter
 from src.gui.page import Page
 import src.local_data.file_handler
@@ -58,7 +56,7 @@ class SettingsPage(Page):
         self.search_profile_label = customtkinter.CTkLabel(self.single_search_frame, text="Search Profile")
         self.search_profile_label.grid(row=0, column=0, padx=10, pady=10)
         self.search_profile = customtkinter.CTkOptionMenu(self.single_search_frame,
-                                                          values=filehandler.get_query_profile_names(),
+                                                          values=self.__get_profile_names(),
                                                           command=self.__set_query_profile)
         self.search_profile.grid(row=0, column=1, padx=10, pady=10)
 
@@ -75,6 +73,19 @@ class SettingsPage(Page):
         self.search_profile_b.grid(row=1, column=1, padx=10, pady=10)
 
         self.__set_process_mode("Single-Photo")
+
+    def __get_profile_names(self) -> list[str]:
+        names = self.__filehandler.get_query_profile_names()
+
+        try:
+            names.remove(self.__filehandler.get_profile_name())
+        except ValueError:
+            print(f"Could not find profile: {self.__filehandler.get_profile_name()}")
+            return names
+
+        names = [self.__filehandler.get_profile_name()] + names
+
+        return names
 
     def __output_type_dd_change(self, value):
         self.output_type = value

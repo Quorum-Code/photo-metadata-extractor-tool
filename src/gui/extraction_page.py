@@ -275,7 +275,7 @@ class QueryThread(QThread):
         self.__update_text("Started querying...")
         self.__update_percent(0)
 
-        res_path = self.__oclc.query_csv_sudoc(self.__csv_path, self.__update_percent)
+        res_path = self.__oclc.query_csv_terms(self.__csv_path, self.__update_percent)
         res_path = res_path.replace("/", "\\")
 
         self.__update_percent(1)
