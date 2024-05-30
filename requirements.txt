@@ -1,5 +1,7 @@
 # NOTE: When changing also update setup.cfg for package versions.
 
+pytest==8.2.1
+
 # RESTful API
 requests==2.31.0
 
