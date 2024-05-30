@@ -34,12 +34,6 @@ class ConfigurationPage(Page):
         self.query_header_textbox = customtkinter.CTkTextbox(self.query_request_frame, height=150, width=500)
         self.query_header_textbox.grid(row=1, column=0, padx=10, pady=10)
 
-        # self.query_parameters_label = customtkinter.CTkLabel(self.query_request_frame, text="Query Request Paramenters")
-        # self.query_parameters_label.grid(row=0, column=1)
-        #
-        # self.query_parameters_textbox = customtkinter.CTkTextbox(self.query_request_frame, height=150, width=250)
-        # self.query_parameters_textbox.grid(row=1, column=1, padx=10, pady=10)
-
         # Config buttons
         self.config_buttons = customtkinter.CTkFrame(self.frame, corner_radius=0, fg_color="transparent")
         self.config_buttons.grid(row=4, column=0, padx=10, pady=10)

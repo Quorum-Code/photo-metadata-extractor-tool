@@ -1,9 +1,6 @@
 import unittest
-import os
 from src.oclc.oclc_api import *
 
-
-# TODO: Corral into test an actual test suite
 
 class TestOCLCAPI(unittest.TestCase):
     def setUp(self):
@@ -20,7 +17,6 @@ class TestOCLCAPI(unittest.TestCase):
     def test_has_secrets(self):
         self.assertEqual(self.has_secrets, True)
 
-    # TODO convert to unittest assert
     def test_is_internet_live(self):
         response_200 = requests.get('https://www.google.com/')
         response_204 = requests.get('https://www.google.com/generate_204')
@@ -30,7 +26,6 @@ class TestOCLCAPI(unittest.TestCase):
         assert response_204.status_code == 204
         assert response_404.status_code == 404
 
-    # TODO convert to unittest assert
     def test_is_service_live(self):
         token_response = requests.get('https://oauth.oclc.org/token')
         auth_response = requests.get('https://oauth.oclc.org/auth')

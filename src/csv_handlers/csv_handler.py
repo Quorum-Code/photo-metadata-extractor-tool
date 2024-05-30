@@ -27,7 +27,7 @@ class SuDocRecord:
         self.author = author
         self.publication_date = publication_date
 
-    def get_dict(self) -> dict[str]:
+    def get_dict(self) -> dict:
         record_dict = {COL_NAMES[0]: f"{self.sudoc}",
                        COL_NAMES[1]: f"{self.status}",
                        COL_NAMES[2]: f"{self.filtered_sudoc}",
@@ -40,7 +40,7 @@ class SuDocRecord:
 
 class CSVDocument:
     def __init__(self, data_handler: fh.FileHandler, folder_path="", file_name="", file_path="", read_only=True):
-        self.__datahandler = data_handler
+        self.__data_handler = data_handler
         self.__file_contents: list[dict] = []
         self.__file_rows: list[list[str]] = []
         self.__file_name = file_name
@@ -50,7 +50,7 @@ class CSVDocument:
 
         if file_path == "":
             if self.__folder_path == "":
-                self.__folder_path = os.path.join(self.__datahandler.get_program_path(), FOLDER_NAME)
+                self.__folder_path = os.path.join(self.__data_handler.get_program_path(), FOLDER_NAME)
                 print(self.__folder_path)
             # Try Load filename
             if self.__file_name != "":
@@ -179,11 +179,11 @@ class CSVDocument:
     def __generate_file(self):
         return
 
-    def __generate_file_name(self) -> str:
-        time_stamp = time.strftime(self.__time_stamp_format, time.localtime())
-        filename = "extraction_" + time_stamp + self.__file_extension
-
-        return filename
+    # def __generate_file_name(self) -> str:
+    #     time_stamp = time.strftime(self.__time_stamp_format, time.localtime())
+    #     filename = "extraction_" + time_stamp + self.__file_extension
+    #
+    #     return filename
 
 
 # if __name__ == "__main__":
